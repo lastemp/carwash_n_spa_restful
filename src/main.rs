@@ -1,0 +1,1059 @@
+extern crate base64;
+
+use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
+use serde::{Serialize, Deserialize};
+use base64::{decode};//encode
+use std::str;
+
+//, Result
+
+#[derive(Serialize)]
+struct Measurement {
+    temperature: f32,
+}
+
+#[derive(Deserialize)]
+struct Info {
+    username: String,
+	posted_by: PostedBy,
+}
+
+#[derive(Deserialize)]
+struct PostedBy {
+    staff_name: String,
+	job_level: String,
+}
+
+#[derive(Deserialize)]
+struct SalesBatchData {
+    batch_no: Option<String>,
+    sales_data: Vec<SalesData>,
+}
+
+#[derive(Deserialize)]
+struct SalesData {
+	customer_sales_data: CustomerSalesData,
+	vehicle_sales_data: Option<VehicleSalesData>,
+	carpet_sales_data: Option<CarpetSalesData>,
+}
+
+#[derive(Deserialize)]
+struct CustomerSalesData {
+    cust_name: String,
+	mobile_no: String,
+	cleaning_service: String,
+}
+
+#[derive(Deserialize)]
+struct VehicleSalesData {
+    vehicle_make: String,
+	vehicle_model: String,
+	vehicle_regno: String,
+	sales_amount: String,
+	payment_mode: String,
+}
+
+#[derive(Deserialize)]
+struct CarpetSalesData {
+    carpet_size: String,
+	carpet_colour: String,
+	sales_amount: String,
+	payment_mode: String,
+}
+
+#[derive(Deserialize)]
+struct VehicleMakeData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct VehicleModelData {
+    mobile_no: Option<String>,
+	vehicle_make: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CarpetTypeSizeData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct VehicleCleaningTypeCostData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CarpetCleaningTypeCostData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CarpetTypeColourData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
+enum ProcessingStatus {
+	Zero,
+	One,
+	Two,
+}
+
+#[derive(Serialize)]
+struct ResponseData {
+    status_code: u32,
+	status_description: String,
+}
+
+#[derive(Serialize)]
+struct ResponseData1 {
+    status_code: u32,
+	status_description: String,
+    person_data: Vec<PersonDetails>,
+}
+
+#[derive(Serialize)]
+struct PersonDetails {
+    username: String,
+	location: String,
+	beneficiary: BeneficiaryDetails,
+	staff_name: String,
+	job_level: String,
+}
+
+#[derive(Serialize)]
+//#[derive(Debug)]
+struct BeneficiaryDetails {
+    full_name: String,
+	relationship: String,
+}
+
+#[derive(Serialize)]
+struct VehicleMakeResponseData {
+	message_data: String,
+    status_code: u32,
+	status_description: String,
+	cost_data: Vec<VehicleCleaningTypeCostDetails>,
+}
+
+#[derive(Serialize)]
+struct VehicleModelResponseData {
+	message_data: String,
+    status_code: u32,
+	status_description: String,
+}
+
+#[derive(Serialize)]
+struct CarpetTypeSizeResponseData {
+	message_data: String,
+    status_code: u32,
+	status_description: String,
+	cost_data: Vec<CarpetCleaningTypeCostDetails>,
+}
+
+#[derive(Serialize)]
+struct VehicleCleaningTypeCostResponseData {
+    status_code: u32,
+	status_description: String,
+    cost_data: Vec<VehicleCleaningTypeCostDetails>,
+}
+
+#[derive(Serialize)]
+struct VehicleCleaningTypeCostDetails {
+    cleaning_type_name: String,
+	amount: u32,
+}
+
+#[derive(Serialize)]
+struct CarpetCleaningTypeCostResponseData {
+    status_code: u32,
+	status_description: String,
+    cost_data: Vec<CarpetCleaningTypeCostDetails>,
+}
+
+#[derive(Serialize)]
+struct CarpetCleaningTypeCostDetails {
+    cleaning_size_name: String,
+	amount: u32,
+}
+
+#[derive(Serialize)]
+struct CarpetTypeColourResponseData {
+	message_data: String,
+    status_code: u32,
+	status_description: String,
+}
+
+#[get("/hello")]
+async fn hello_world() -> impl Responder {
+    "Hello World!"
+}
+
+#[get("/temp")]
+async fn current_temperature() -> impl Responder {
+    web::Json(Measurement { temperature: 42.3 })
+}
+
+//async fn get_person(info: web::Json<Info>) -> Result<String> {
+/// deserialize `Info` from request's body
+#[post("/person")]
+async fn get_person(info: web::Json<Info>) -> impl Responder {
+	//let user_name: String = String::from(info.username);
+	//let user_name: String = info.username.clone();
+	//let user_name: &String = &info.username;
+	let user_name = &info.username;
+	let my_staff_name = &info.posted_by.staff_name;
+	let my_job_level = &info.posted_by.job_level;
+	let location_name = get_location();
+	let my_beneficiary = BeneficiaryDetails { full_name: String::from("Moses Weta"), relationship: String::from("Son") };
+	let my_beneficiary1 = BeneficiaryDetails { full_name: String::from("Benta Shiraku"), relationship: String::from("Daughter") };
+	let my_beneficiary2 = BeneficiaryDetails { full_name: String::from("Paul Owino"), relationship: String::from("Son") };
+    //Ok(format!("Welcome {}!", info.username))
+	//web::Json(PersonDetails { username: user_name.to_string(), location: location_name, beneficiary: my_beneficiary, staff_name: my_staff_name.to_string(), job_level: my_job_level.to_string() })
+	let mut x = Vec::new();
+	let my_person = PersonDetails { username: user_name.to_string(), location: location_name, beneficiary: my_beneficiary, staff_name: my_staff_name.to_string(), job_level: my_job_level.to_string() };
+	let my_person1 = PersonDetails { username: String::from("walter"), location: String::from("westlands"), beneficiary: my_beneficiary1, staff_name: my_staff_name.to_string(), job_level: my_job_level.to_string() };
+	//let my_person2 = PersonDetails { username: String::from("mary"), location: String::from("ngong"), beneficiary: my_beneficiary2, staff_name: my_staff_name.to_string(), job_level: my_job_level.to_string() };
+	let my_person2 = PersonDetails { username: user_name.to_string(), location: String::from("ngong"), beneficiary: my_beneficiary2, staff_name: my_staff_name.to_string(), job_level: my_job_level.to_string() };
+	//println!("my_beneficiary borrowed in {:?}", my_beneficiary);
+	x.push(my_person);
+	x.push(my_person1);
+	x.push(my_person2);
+	//web::Json(x)
+	//let my_response_data = ResponseData { status_code: 0, status_description: String::from("Successful"), person_data: x };
+	let my_response_data = ResponseData1 { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), person_data: x };
+	web::Json(my_response_data)
+}
+
+fn get_location() -> String {
+	let local_name = String::from("Dandora");
+	local_name
+}
+
+async fn greet(req: HttpRequest) -> impl Responder {
+    let name = req.match_info().get("name").unwrap_or("World");
+    format!("Hello {}!", &name)
+}
+
+/// deserialize `VehicleMakeData` from request's body
+#[post("/getvehiclemakedata")]
+async fn get_vehicle_make_data(vehicle_make_data: web::Json<VehicleMakeData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	println!("channel_type - {:?}", channel_type);
+	let mobile_no = &vehicle_make_data.mobile_no.as_ref().unwrap_or(&k);
+	let vehicle_make = String::from("ALFA ROMEO|ANY|ASHOK|AUDI|BACKHOE|BAJAJ|BEDFORD|BEIBEN|BEIFANG|BHACHU|BMW|BOBCAT|BOMAG|BULLDOZER|BUS|CADILLAC|CAM|CANTER|CASE|CAT|CHEVROLET|CHRYSLER|CITROEN|CMC|CRANE|DAEWOO|DAF|DAIHATSU|DODGE|DOLL|DOZER|DUMPER|EICHER|EXCAVATOR|FAW|FERRARI|FIAT|FORD|FOTON|GEELEY|GRADER|GREATWALL|HAMM|HANS KENYA|HINO|HITACHI|HONDA|HOWO|HUMMER|HYUNDAI|ISUZU|IVECO|JAC|JAGUAR|JCB|JEEP|JMC|JOHN-DEERE|KEHAR|KIA|KLUGER|KOMATSU|LANCER|LANDROVER|LEEBOY|LEXUS|LEYLAND|LEYLANDDAF|LIEBHERR|LOADER|LORRY|M/CYCLE|MACK|MAHINDRA|MAN|MARUTI|MASSEY|MAZDA|MERCEDES|MINI|MITSUBISHI|MIXER|MORRIS|NEWHOLLAND|NIS_DIE|NISSAN|OCEAN|OPEL|PACER|PEUGEOT|PORSCHE|PRIMEMOVER|PUCH|RANDON|RENAULT|ROLLER|ROLLS|ROVER|SAAB|SAILOR|SCANIA|SDLG|SHACMAN|SHOVEL|SINO|SKODA|SONALIKA|SSANG YONG|SUBARU|SUZUKI|TADANO|TANKER|TATA|TEREX|TIGER|TIGGO|TIPPER|TOYOTA|TRACTOR|TRAILER|TRUCK|TUKTUK|TVS|UD|VAUXHALL|VOLKSWAGEN|VOLVO|WUZHENG|XINKAI|YAMAHA|YARI|");
+	let mut k = Vec::new();
+	let interior_cleaning_name = String::from("interior");
+	let exterior_cleaning_name = String::from("exterior");
+	let engine_cleaning_name = String::from("engine");
+	let under_carriage_cleaning_name = String::from("undercarriage");
+
+	let interior_cleaning_cost = 200;
+	let exterior_cleaning_cost = 300;
+	let engine_cleaning_cost = 150;
+	let under_carriage_cleaning_cost = 210;
+
+	let interior_item = VehicleCleaningTypeCostDetails { cleaning_type_name: interior_cleaning_name, amount: interior_cleaning_cost };
+	k.push(interior_item);
+	let exterior_item = VehicleCleaningTypeCostDetails { cleaning_type_name: exterior_cleaning_name, amount: exterior_cleaning_cost };
+	k.push(exterior_item);
+	let engine_item = VehicleCleaningTypeCostDetails { cleaning_type_name: engine_cleaning_name, amount: engine_cleaning_cost };
+	k.push(engine_item);
+	let under_carriage_item = VehicleCleaningTypeCostDetails { cleaning_type_name: under_carriage_cleaning_name, amount: under_carriage_cleaning_cost };
+	k.push(under_carriage_item);
+	
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
+	let b = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
+	let c = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
+	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
+	println!("details is {:?}", d);
+	
+	let response_data = VehicleMakeResponseData {message_data: vehicle_make.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
+	web::Json(response_data)
+}
+
+/// deserialize `VehicleModelData` from request's body
+#[post("/getvehiclemodeldata")]
+async fn get_vehicle_model_data(vehicle_model_data: web::Json<VehicleModelData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	println!("channel_type - {:?}", channel_type);
+	let mobile_no = &vehicle_model_data.mobile_no.as_ref().unwrap_or(&k);
+	//let mut vehicle_make = &vehicle_model_data.vehicle_make.as_ref().unwrap_or(&k);
+	let vehicle_make = &vehicle_model_data.vehicle_make.as_ref().unwrap_or(&k);
+	//let vehicle_model = String::from("AUDI|AUDI-A2|AUDI-A3|AUDI-A3 SE AUTO|AUDI-A4 AVANT S|AUDI-A4 AVANT W|AUDI-A4 FSI S-L|AUDI-A4 TURBO Q|AUDI-A6 SE AUTO|AUDI-A6 STDI|AUDI-A6 TURBO|AUDI-A6 TURBO S|AUDI-A8 SE TDI|AUDI-AUDI 500|AUDI-Q5|AUDI-Q5 3.2L AU|AUDI-Q7|");
+	let mut vehicle_model = String::from("");
+	
+	//let t = vehicle_make.to_lowercase().eq(String::from("audi"))
+	
+	let a_1 = String::from("audi");
+	let a_2 = String::from("bajaj");
+	let a_3 = String::from("bmw");
+	
+	vehicle_model =
+		{
+			if vehicle_make.to_lowercase().eq(&a_1) {
+				String::from("AUDI|AUDI-A2|AUDI-A3|AUDI-A3 SE AUTO|AUDI-A4 AVANT S|AUDI-A4 AVANT W|AUDI-A4 FSI S-L|AUDI-A4 TURBO Q|AUDI-A6 SE AUTO|AUDI-A6 STDI|AUDI-A6 TURBO|AUDI-A6 TURBO S|AUDI-A8 SE TDI|AUDI-AUDI 500|AUDI-Q5|AUDI-Q5 3.2L AU|AUDI-Q7|")
+			}
+			else if vehicle_make.to_lowercase().eq(&a_2){
+				String::from("BAJAJ BM 150X|BAJAJ QUTE|BAJAJ TUKTUK|")
+			}
+			else if vehicle_make.to_lowercase().eq(&a_3){
+				String::from("BMW|BMW 316I|BMW 5|BMW 650GS|BMW ABA-VA20|BMW IGT|BMW-116D F20SH|BMW-116D N47 U|BMW-116I|BMW-116I E81 N|BMW-116I F20SH|BMW-118D N47 U|BMW-118D- N47|BMW-118I E88 C|BMW-118I N13 F|BMW-118I N46 U|BMW-120D CP|BMW-120D N47 U|BMW-120I E82 C|BMW-120I N46 U|BMW-125I N52 U|BMW-130I MANUA|BMW-130I N52 U|BMW-135I N54 U|BMW-135I N55 U|BMW-316I E90 L|BMW-318I I N46|BMW-318I N46 P|BMW-320D|BMW-320D N47 K|BMW-320ED|BMW-320I|BMW-320I E93 C|BMW-320I N46 P|BMW-325I AUTO|BMW-325I MANUA|BMW-325I N52 D|BMW-325I N52 K|BMW-325I N52 P|BMW-325I N53 C|BMW-330 CI CON|BMW-330D|BMW-330D N57 K|BMW-330I  N52|BMW-330I AUTO|BMW-330I MANUA|BMW-335I|BMW-335I N54 K|BMW-335I N54 P|BMW-335I N55 D|BMW-520D AUTO|BMW-520I|BMW-523I|BMW-525D|BMW-525I|BMW-525I AUTO|BMW-528I AUTO|BMW-530D N57 F|BMW-530I MANUA|BMW-535D N57 S|BMW-535I F07 G|BMW-535I N55 F|BMW-550I N63 F|BMW-550I N63 S|BMW-630I  E63|BMW-630I  E64|BMW-650I  N62|BMW-730D|BMW-730I F02 L|BMW-730IAUTO|BMW-730LD N57|BMW-735I|BMW-740I N54 K|BMW-740LI N54|BMW-745IA|BMW-750I N63 K|BMW-750I XDRIV|BMW-750LI N63|BMW-750LI XDRI|BMW-760I N74 K|BMW-760LI N74|BMW-BMW MINI C|BMW-BMW MOTOR CYCLE|BMW-BMW Z3 ROA|BMW-F650 GS 218|BMW-F800 GS 219|BMW-F800 R 217|BMW-F800 ST 234|BMW-G650 GS SERTA|BMW-G650GS 188|BMW-K1300 R 518|BMW-K1300 S 308|BMW-K1600 GT 601|BMW-K1600 GTL 602|BMW-M3 S65 DX9|BMW-M3 S65 KG9|BMW-M3 S65 PM9|BMW-M6 S85 EH9|BMW-M6 S85 EK9|BMW-R1200 GS 450|BMW-R1200 R 400|BMW-R1200 R GS ADV|BMW-R1200 RT 430|BMW-R1200RT 430|BMW-R900 RT 330|BMW-S1000 RR 524|BMW-X1|BMW-X1 SDRIVEN|BMW-X1 XDRIVEN|BMW-X3|BMW-X3 XDRIVE2|BMW-X3 XDRIVE3|BMW-X3 XDRIVEN|BMW-X3 XRIVE30|BMW-X5|BMW-X5 3.0D|BMW-X5 351|BMW-X5 M S63 G|BMW-X5 XDRIVE5|BMW-X5 XDRIVEN|BMW-X6|BMW-X6 M N63 G|BMW-X6 XDRIVE5|BMW-Z4 E89 ROA|")
+			}
+			else{
+				String::from("")
+			}
+		};
+	
+	/*
+	let vehicle_model = 
+	match vehicle_make {
+            String::from("audi") => 
+				String::from("AUDI|AUDI-A2|AUDI-A3|AUDI-A3 SE AUTO|AUDI-A4 AVANT S|AUDI-A4 AVANT W|AUDI-A4 FSI S-L|AUDI-A4 TURBO Q|AUDI-A6 SE AUTO|AUDI-A6 STDI|AUDI-A6 TURBO|AUDI-A6 TURBO S|AUDI-A8 SE TDI|AUDI-AUDI 500|AUDI-Q5|AUDI-Q5 3.2L AU|AUDI-Q7|"),
+			String::from("toyota") => String::from("toyota"),
+            _ => String::from("none"),
+        };
+	
+	match vehicle_make {
+            c1 => println!("This is a match 1!"),
+			c2 => println!("This is a match 2!"),
+            _ => println!("Match failed"),
+        }
+	*/
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
+	let b = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
+	let c = format!("{}{}", String::from("vehicle_model - "), vehicle_model);
+	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
+	println!("details is {:?}", d);
+	
+	let response_data = VehicleModelResponseData {message_data: vehicle_model.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful")};
+	web::Json(response_data)
+}
+
+/// deserialize `CarpetTypeSizeData` from request's body
+#[post("/getcarpettypesizedata")]
+async fn get_carpet_type_size_data(carpet_type_size_data: web::Json<CarpetTypeSizeData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	println!("channel_type - {:?}", channel_type);
+	let mobile_no = &carpet_type_size_data.mobile_no.as_ref().unwrap_or(&k);
+	let carpet_type_size = String::from("CARPET SIZE|5 by 8|6 by 9|7 by 10|8 by 11|");
+	let mut k = Vec::new();
+	let a_cleaning_size_name = String::from("5by8");
+	let b_cleaning_size_name = String::from("6by9");
+	let c_cleaning_size_name = String::from("7by10");
+	let d_size_cleaning_name = String::from("8by11");
+	
+	let a_cleaning_size_cost = 600;
+	let b_cleaning_size_cost = 700;
+	let c_cleaning_size_cost = 800;
+	let d_cleaning_size_cost = 900;
+	
+	let a_item = CarpetCleaningTypeCostDetails { cleaning_size_name: a_cleaning_size_name, amount: a_cleaning_size_cost };
+	k.push(a_item);
+	let b_item = CarpetCleaningTypeCostDetails { cleaning_size_name: b_cleaning_size_name, amount: b_cleaning_size_cost };
+	k.push(b_item);
+	let c_item = CarpetCleaningTypeCostDetails { cleaning_size_name: c_cleaning_size_name, amount: c_cleaning_size_cost };
+	k.push(c_item);
+	let d_item = CarpetCleaningTypeCostDetails { cleaning_size_name: d_size_cleaning_name, amount: d_cleaning_size_cost };
+	k.push(d_item);
+	
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
+	let b = format!("{}{}", String::from("carpet_type_size - "), carpet_type_size);
+	let c = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
+	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
+	println!("details is {:?}", d);
+	
+	let response_data = CarpetTypeSizeResponseData {message_data: carpet_type_size.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
+	web::Json(response_data)
+}
+
+/// deserialize `CarpetTypeColourData` from request's body
+#[post("/getcarpettypecolourdata")]
+async fn get_carpet_type_colour_data(carpet_type_colour_data: web::Json<CarpetTypeColourData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	println!("channel_type - {:?}", channel_type);
+	let mobile_no = &carpet_type_colour_data.mobile_no.as_ref().unwrap_or(&k);
+	let carpet_type_colour = String::from("CARPET COLOUR|WHITE|BLACK|RED|BLUE|YELLOW|ORANGE|PURPLE|GREEN|MIXTURE");
+	
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
+	let b = format!("{}{}", String::from("carpet_type_colour - "), carpet_type_colour);
+	let c = format!("{}{}{}{}", a, x, b, x);
+	println!("details is {:?}", c);
+	
+	let response_data = CarpetTypeColourResponseData {message_data: carpet_type_colour.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful") };
+	web::Json(response_data)
+}
+
+/// deserialize `VehicleCleaningTypeCostData` from request's body
+#[post("/getvehiclecleaningtypecostdata")]
+async fn get_vehicle_cleaning_type_cost_data(vehicle_cleaning_type_cost_data: web::Json<VehicleCleaningTypeCostData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	println!("channel_type - {:?}", channel_type);
+	let mobile_no = &vehicle_cleaning_type_cost_data.mobile_no.as_ref().unwrap_or(&k);
+	let mut k = Vec::new();
+	let interior_cleaning_name = String::from("interior");
+	let exterior_cleaning_name = String::from("exterior");
+	let engine_cleaning_name = String::from("engine");
+	let under_carriage_cleaning_name = String::from("undercarriage");
+	
+	let interior_cleaning_cost = 200;
+	let exterior_cleaning_cost = 300;
+	let engine_cleaning_cost = 150;
+	let under_carriage_cleaning_cost = 210;
+	
+	let interior_item = VehicleCleaningTypeCostDetails { cleaning_type_name: interior_cleaning_name, amount: interior_cleaning_cost };
+	k.push(interior_item);
+	let exterior_item = VehicleCleaningTypeCostDetails { cleaning_type_name: exterior_cleaning_name, amount: exterior_cleaning_cost };
+	k.push(exterior_item);
+	let engine_item = VehicleCleaningTypeCostDetails { cleaning_type_name: engine_cleaning_name, amount: engine_cleaning_cost };
+	k.push(engine_item);
+	let under_carriage_item = VehicleCleaningTypeCostDetails { cleaning_type_name: under_carriage_cleaning_name, amount: under_carriage_cleaning_cost };
+	k.push(under_carriage_item);
+	
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
+	let b = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
+	let c = format!("{}{}{}{}", a, x, b, x);
+	println!("details is {:?}", c);
+	
+	let response_data = VehicleCleaningTypeCostResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
+	web::Json(response_data)
+}
+
+/// deserialize `CarpetCleaningTypeCostData` from request's body
+#[post("/getcarpetcleaningtypecostdata")]
+async fn get_carpet_cleaning_type_cost_data(carpet_cleaning_type_cost_data: web::Json<CarpetCleaningTypeCostData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	println!("channel_type - {:?}", channel_type);
+	let mobile_no = &carpet_cleaning_type_cost_data.mobile_no.as_ref().unwrap_or(&k);
+	let mut k = Vec::new();
+	let a_cleaning_size_name = String::from("5by8");
+	let b_cleaning_size_name = String::from("6by9");
+	let c_cleaning_size_name = String::from("7by10");
+	let d_size_cleaning_name = String::from("8by11");
+	
+	let a_cleaning_size_cost = 600;
+	let b_cleaning_size_cost = 700;
+	let c_cleaning_size_cost = 800;
+	let d_cleaning_size_cost = 900;
+	
+	let a_item = CarpetCleaningTypeCostDetails { cleaning_size_name: a_cleaning_size_name, amount: a_cleaning_size_cost };
+	k.push(a_item);
+	let b_item = CarpetCleaningTypeCostDetails { cleaning_size_name: b_cleaning_size_name, amount: b_cleaning_size_cost };
+	k.push(b_item);
+	let c_item = CarpetCleaningTypeCostDetails { cleaning_size_name: c_cleaning_size_name, amount: c_cleaning_size_cost };
+	k.push(c_item);
+	let d_item = CarpetCleaningTypeCostDetails { cleaning_size_name: d_size_cleaning_name, amount: d_cleaning_size_cost };
+	k.push(d_item);
+	
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
+	let b = format!("{}{}", String::from("carpet_cleaning_type_cost - "), k.len().to_string());
+	let c = format!("{}{}{}{}", a, x, b, x);
+	println!("details is {:?}", c);
+	
+	let response_data = CarpetCleaningTypeCostResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
+	web::Json(response_data)
+}
+
+/// deserialize `SalesBatchData` from request's body
+#[post("/addsalesdata")]
+async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	//let channel_type = HeaderName::from_lowercase(b"channeltype").unwrap_or(&k);
+	//let channel_type = HeaderValue::from_str("ChannelType").unwrap();
+	//let channel_type = req.headers().get("ChannelType");
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	println!("channel_type - {:?}", channel_type);
+	//let batch_no = &sales_data.batch_no;
+	//let batch_no = &sales_data.batch_no.as_ref().unwrap_or(k.to_owned());
+	//let k = String::from(""); //Default value for string variables.
+	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let batch_no = &sales_batch_data.batch_no.as_ref().unwrap_or(&k);
+	let sales_batch_data = &sales_batch_data.sales_data;
+	/*
+	let cust_name = &sales_data.customer_sales_data.cust_name;
+	//let vehicle_make = &sales_data.vehicle_sales_data.vehicle_make;
+	let vehicle_make = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make;
+	//let sales_amount_v = &sales_data.vehicle_sales_data.sales_amount;
+	let sales_amount_v = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).sales_amount;
+	let carpet_size = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size;
+	let sales_amount_c = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount;
+	*/
+	
+	/*
+	println!("batch_no is {:?}", batch_no);
+	println!("cust_name is {:?}", cust_name);
+	println!("vehicle_make is {:?}", vehicle_make);
+	println!("sales_amount_v is {:?}", sales_amount_v);
+	println!("carpet_size is {:?}", carpet_size);
+	println!("sales_amount_c is {:?}", sales_amount_c);
+	*/
+	
+	let mut cust_name = &k;
+	let mut vehicle_make = &k;
+	let mut sales_amount_v = &k;
+	let mut carpet_size = &k;
+	let mut sales_amount_c = &k;
+	
+	for sales_data in sales_batch_data.iter() {
+		cust_name = &sales_data.customer_sales_data.cust_name;
+		vehicle_make = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make;
+		sales_amount_v = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).sales_amount;
+		carpet_size = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size;
+		sales_amount_c = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount;
+		
+		let c1 = &String::from("risper muite").to_lowercase();
+		println!("Check 1 {}", cust_name.to_lowercase().eq(c1));
+		/*
+		match cust_name {
+            c1 => println!("This is a match 1!"),
+			c2 => println!("This is a match 2!"),
+            _ => println!("Match failed"),
+			//_ => println!("Hello {}", cust_name),
+        }
+		*/
+	}
+	
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("batch_no - "), batch_no);
+	let b = format!("{}{}", String::from("cust_name - "), cust_name);
+	let c = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
+	let d = format!("{}{}", String::from("sales_amount_v - "), sales_amount_v);
+	let e = format!("{}{}", String::from("carpet_size - "), carpet_size);
+	let f = format!("{}{}", String::from("sales_amount_c - "), sales_amount_c);
+	let g = format!("{}{}{}{}{}{}{}{}{}{}{}", a, x, b, x, c, x, d, x, e, x, f);
+	println!("details is {:?}", g);
+	//let details = format!("{}{}", borrowed_string, another_borrowed_string);
+	
+	let response_data = ResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful")};
+	web::Json(response_data)
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    HttpServer::new(|| {
+        App::new()
+		    .service(hello_world)
+            .service(current_temperature)
+			.service(get_person)
+			.service(get_vehicle_make_data)
+			.service(get_vehicle_model_data)
+			.service(get_carpet_type_size_data)
+			.service(get_carpet_type_colour_data)
+			.service(get_vehicle_cleaning_type_cost_data)
+			.service(get_carpet_cleaning_type_cost_data)
+			.service(add_sales_data)
+            .route("/", web::get().to(greet))
+            .route("/{name}", web::get().to(greet))
+    })
+    //.bind("127.0.0.1:8080")?
+	.bind("192.168.3.22:9247")?
+    .run()
+    .await
+}
