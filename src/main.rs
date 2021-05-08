@@ -97,6 +97,25 @@ struct CarpetTypeColourData {
 	device_registration_token: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct HistorySalesData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SearchSalesItems {
+    mobile_no: Option<bool>,
+	customer_name: Option<bool>,
+	vehicle_regno: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct SearchHistorySalesData {
+    search_data: Option<String>,
+	search_by: SearchSalesItems,
+}
+
 enum ProcessingStatus {
 	Zero,
 	One,
@@ -186,6 +205,37 @@ struct CarpetTypeColourResponseData {
 	message_data: String,
     status_code: u32,
 	status_description: String,
+}
+
+#[derive(Serialize)]
+struct HistoryVehicleSalesData {
+    vehicle_make: String,
+	vehicle_model: String,
+	vehicle_regno: String,
+	sales_amount: u32,
+	payment_mode: String,
+	interior_cleaning: bool,
+	exterior_cleaning: bool,
+	engine_cleaning: bool,
+	undercarriage_cleaning: bool,
+	transaction_date: String,
+}
+
+#[derive(Serialize)]
+struct HistoryCarpetSalesData {
+    carpet_size: String,
+	carpet_colour: String,
+	sales_amount: u32,
+	payment_mode: String,
+	transaction_date: String,
+}
+
+#[derive(Serialize)]
+struct HistorySalesResponseData {
+    status_code: u32,
+	status_description: String,
+	carpet_sales_data: Vec<HistoryCarpetSalesData>,
+	vehicle_sales_data: Vec<HistoryVehicleSalesData>,
 }
 
 #[get("/hello")]
@@ -342,7 +392,7 @@ async fn get_vehicle_make_data(vehicle_make_data: web::Json<VehicleMakeData>, re
 	let b = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
 	let c = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
 	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
-	println!("details is {:?}", d);
+	//println!("details is {:?}", d);
 	
 	let response_data = VehicleMakeResponseData {message_data: vehicle_make.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
 	web::Json(response_data)
@@ -1035,6 +1085,410 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	web::Json(response_data)
 }
 
+/// deserialize `HistorySalesData` from request's body
+#[post("/getallsalesdata")]
+async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	//println!("channel_type - {:?}", channel_type);
+	let mobile_no = &history_sales_data.mobile_no.as_ref().unwrap_or(&k);
+	let mut k = Vec::new();
+	let mut m = Vec::new();
+	/*
+	//Carpets
+	let carpet_size_1: String = String::from("6 by 9");
+	let carpet_colour_1: String = String::from("PURPLE");
+	let carpet_sales_amount_1 = 120;
+	let carpet_payment_mode_1: String = String::from("m-pesa");
+	let carpet_transaction_date_1: String = String::from("10-03-2021, 07:29 pm");
+	
+	let carpet_size_2: String = String::from("5 by 8");
+	let carpet_colour_2: String = String::from("BLUE");
+	let carpet_sales_amount_2 = 130;
+	let carpet_payment_mode_2: String = String::from("cash");
+	let carpet_transaction_date_2: String = String::from("12-03-2021, 02:15 pm");
+	
+	//Vehicles
+	let vehicle_make_1: String = String::from("BMW");
+	let vehicle_model_1: String = String::from("BMW 316I");
+	let vehicle_regno_1: String = String::from("KAB 123X");
+	let vehicle_sales_amount_1 = 350;
+	let vehicle_payment_mode_1: String = String::from("cash");
+	let interior_cleaning_1: bool = true;
+	let exterior_cleaning_1: bool = false;
+	let engine_cleaning_1: bool = true;
+	let undercarriage_cleaning_1: bool = false;
+	let vehicle_transaction_date_1: String = String::from("12-03-2021, 01:00 pm");
+	
+	let vehicle_make_2: String = String::from("AUDI");
+	let vehicle_model_2: String = String::from("AUDI-A3");
+	let vehicle_regno_2: String = String::from("KAC 003V");
+	let vehicle_sales_amount_2 = 340;
+	let vehicle_payment_mode_2: String = String::from("m-pesa");
+	let interior_cleaning_2: bool = false;
+	let exterior_cleaning_2: bool = true;
+	let engine_cleaning_2: bool = false;
+	let undercarriage_cleaning_2: bool = true;
+	let vehicle_transaction_date_2: String = String::from("12-03-2021, 03:00 pm");
+	*/
+	//Carpets	
+	let carpet_sales_data_1 = get_carpet_sales_data_1();
+	k.push(carpet_sales_data_1);
+	let carpet_sales_data_2 = get_carpet_sales_data_2();
+	k.push(carpet_sales_data_2);
+	
+	//Vehicles
+	let vehicle_sales_data_1 = get_vehicle_sales_data_1();
+	m.push(vehicle_sales_data_1);
+	let vehicle_sales_data_2 = get_vehicle_sales_data_2();
+	m.push(vehicle_sales_data_2);
+	/*
+	let x = String::from(" ");
+	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
+	let b = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
+	let c = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
+	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
+	println!("details is {:?}", d);
+	*/
+	let response_data = HistorySalesResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), carpet_sales_data: k, vehicle_sales_data: m };
+	web::Json(response_data)
+}
+
+/// deserialize `SearchHistorySalesData` from request's body
+#[post("/getsearchsalesdata")]
+async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistorySalesData>, req: HttpRequest) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let j: bool = false;
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							println!("user_name - {:?}", user_name);
+							println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	//println!("channel_type - {:?}", channel_type);
+	let search_data = &search_history_sales_data.search_data.as_ref().unwrap_or(&k);
+	let search_by_key = &search_history_sales_data.search_by;
+	let mut k = Vec::new();
+	let mut m = Vec::new();
+	
+	let is_mobile_no = &search_by_key.mobile_no.as_ref().unwrap_or(&j);
+	let is_customer_name = &search_by_key.customer_name.as_ref().unwrap_or(&j);
+	let is_vehicle_regno = &search_by_key.vehicle_regno.as_ref().unwrap_or(&j);
+		
+	//if is_mobile_no {println!("mobile_no - true");}
+	//if is_customer_name {println!("is_customer_name - true");}
+	/*
+	match is_mobile_no {
+		true => println!("mobile_no - true"),
+		false => println!("mobile_no - false"),
+	}
+	match is_customer_name {
+		true => println!("customer_name - true"),
+		false => println!("customer_name - false"),
+	}
+	match is_vehicle_regno {
+		true => println!("vehicle_regno - true"),
+		false => println!("vehicle_regno - false"),
+	}
+	println!("search_data - {:?}", search_data);
+	*/
+	
+	//Carpets
+	/*
+	let carpet_size_1: String = String::from("6 by 9");
+	let carpet_colour_1: String = String::from("PURPLE");
+	let carpet_sales_amount_1 = 120;
+	let carpet_payment_mode_1: String = String::from("m-pesa");
+	let carpet_transaction_date_1: String = String::from("10-03-2021, 07:29 pm");
+	
+	let carpet_size_2: String = String::from("5 by 8");
+	let carpet_colour_2: String = String::from("BLUE");
+	let carpet_sales_amount_2 = 130;
+	let carpet_payment_mode_2: String = String::from("cash");
+	let carpet_transaction_date_2: String = String::from("12-03-2021, 02:15 pm");
+	*/
+	//Vehicles
+	/*
+	let vehicle_make_1: String = String::from("BMW");
+	let vehicle_model_1: String = String::from("BMW 316I");
+	let vehicle_regno_1: String = String::from("KAB 123X");
+	let vehicle_sales_amount_1 = 350;
+	let vehicle_payment_mode_1: String = String::from("cash");
+	let interior_cleaning_1: bool = true;
+	let exterior_cleaning_1: bool = false;
+	let engine_cleaning_1: bool = true;
+	let undercarriage_cleaning_1: bool = false;
+	let vehicle_transaction_date_1: String = String::from("12-03-2021, 01:00 pm");
+	
+	let vehicle_make_2: String = String::from("AUDI");
+	let vehicle_model_2: String = String::from("AUDI-A3");
+	let vehicle_regno_2: String = String::from("KAC 003V");
+	let vehicle_sales_amount_2 = 340;
+	let vehicle_payment_mode_2: String = String::from("m-pesa");
+	let interior_cleaning_2: bool = false;
+	let exterior_cleaning_2: bool = true;
+	let engine_cleaning_2: bool = false;
+	let undercarriage_cleaning_2: bool = true;
+	let vehicle_transaction_date_2: String = String::from("12-03-2021, 03:00 pm");
+	*/
+
+	//Carpets	
+	//let carpet_sales_data_1 = HistoryCarpetSalesData { carpet_size: carpet_size_1, carpet_colour: carpet_colour_1, sales_amount: carpet_sales_amount_1, payment_mode: carpet_payment_mode_1, transaction_date: carpet_transaction_date_1 };
+	let carpet_sales_data_1 = get_carpet_sales_data_1();
+	//k.push(carpet_sales_data_1);
+	//let carpet_sales_data_2 = HistoryCarpetSalesData { carpet_size: carpet_size_2, carpet_colour: carpet_colour_2, sales_amount: carpet_sales_amount_2, payment_mode: carpet_payment_mode_2, transaction_date: carpet_transaction_date_2 };
+	let carpet_sales_data_2 = get_carpet_sales_data_2();
+	//k.push(carpet_sales_data_2);
+	
+	//Vehicles
+	//let vehicle_sales_data_1 = HistoryVehicleSalesData { vehicle_make: vehicle_make_1, vehicle_model: vehicle_model_1, vehicle_regno: vehicle_regno_1, sales_amount: vehicle_sales_amount_1, payment_mode: vehicle_payment_mode_1, interior_cleaning: interior_cleaning_1, exterior_cleaning: exterior_cleaning_1, engine_cleaning: engine_cleaning_1, undercarriage_cleaning: undercarriage_cleaning_1, transaction_date: vehicle_transaction_date_1 };
+	let vehicle_sales_data_1 = get_vehicle_sales_data_1();
+	//m.push(vehicle_sales_data_1);
+	//let vehicle_sales_data_2 = HistoryVehicleSalesData { vehicle_make: vehicle_make_2, vehicle_model: vehicle_model_2, vehicle_regno: vehicle_regno_2, sales_amount: vehicle_sales_amount_2, payment_mode: vehicle_payment_mode_2, interior_cleaning: interior_cleaning_2, exterior_cleaning: exterior_cleaning_2, engine_cleaning: engine_cleaning_2, undercarriage_cleaning: undercarriage_cleaning_2, transaction_date: vehicle_transaction_date_2 };
+	let vehicle_sales_data_2 = get_vehicle_sales_data_2();
+	//m.push(vehicle_sales_data_2);
+	let vehicle_sales_data_3 = get_vehicle_sales_data_1();
+	//m.push(vehicle_sales_data_1);
+	let vehicle_sales_data_4 = get_vehicle_sales_data_2();
+	let vehicle_sales_data_5 = get_vehicle_sales_data_2();
+	
+	let a_1 = String::from("nicole");
+	let a_2 = String::from("paul");
+	let a_3 = String::from("254723083761");
+	let a_4 = String::from("KAB 123X");
+	let a_5 = String::from("KAC 003V");
+	
+	match is_mobile_no {
+		true => {
+			println!("search_data 1 true - {:?}", search_data.replace(" ","").to_lowercase());
+			if search_data.replace(" ","").to_lowercase().eq(&a_3.replace(" ","").to_lowercase()) {
+				m.push(vehicle_sales_data_5);
+				//println!("search_data 1 true - {:?}", search_data.replace(" ","").to_lowercase());
+			}
+			else{
+			}
+		}
+		,
+		false => println!("mobile_no - false"),
+	}
+	match is_customer_name {
+		true => {
+			if search_data.to_lowercase().eq(&a_1) {
+				k.push(carpet_sales_data_2);
+				m.push(vehicle_sales_data_1);
+			}
+			else if search_data.to_lowercase().eq(&a_2){
+				k.push(carpet_sales_data_1);
+				m.push(vehicle_sales_data_2);
+			}
+			else{
+			}
+		},
+		false => println!("customer_name - false"),
+	}	
+	//println!("search_data 1 - {:?}", search_data.replace(" ","").to_lowercase());
+	//println!("a_4 - {:?}", a_4.replace(" ","").to_lowercase());
+	match is_vehicle_regno {
+		true => {
+			if search_data.replace(" ","").to_lowercase().eq(&a_4.replace(" ","").to_lowercase()) {
+				m.push(vehicle_sales_data_3);
+				println!("search_data 1 true - {:?}", search_data.replace(" ","").to_lowercase());
+			}
+			else if search_data.replace(" ","").to_lowercase().eq(&a_5.replace(" ","").to_lowercase()){
+				m.push(vehicle_sales_data_4);
+				println!("search_data 2 true - {:?}", search_data.replace(" ","").to_lowercase());
+			}
+			else{
+			}
+		},
+		false => println!("vehicle_regno - false"),
+	}
+
+	let response_data = HistorySalesResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), carpet_sales_data: k, vehicle_sales_data: m };
+	web::Json(response_data)
+}
+fn get_carpet_sales_data_1() -> HistoryCarpetSalesData {
+	let carpet_size: String = String::from("6 by 9");
+	let carpet_colour: String = String::from("PURPLE");
+	let carpet_sales_amount = 120;
+	let carpet_payment_mode: String = String::from("m-pesa");
+	let carpet_transaction_date: String = String::from("10-03-2021, 07:29 pm");
+	let carpet_sales_data = HistoryCarpetSalesData { carpet_size: carpet_size, carpet_colour: carpet_colour, sales_amount: carpet_sales_amount, payment_mode: carpet_payment_mode, transaction_date: carpet_transaction_date };
+	carpet_sales_data
+}
+fn get_carpet_sales_data_2() -> HistoryCarpetSalesData {
+	let carpet_size: String = String::from("5 by 8");
+	let carpet_colour: String = String::from("BLUE");
+	let carpet_sales_amount = 130;
+	let carpet_payment_mode: String = String::from("cash");
+	let carpet_transaction_date: String = String::from("12-03-2021, 02:15 pm");
+	let carpet_sales_data = HistoryCarpetSalesData { carpet_size: carpet_size, carpet_colour: carpet_colour, sales_amount: carpet_sales_amount, payment_mode: carpet_payment_mode, transaction_date: carpet_transaction_date };
+	carpet_sales_data
+}
+fn get_vehicle_sales_data_1() -> HistoryVehicleSalesData {
+	let vehicle_make: String = String::from("BMW");
+	let vehicle_model: String = String::from("BMW 316I");
+	let vehicle_regno: String = String::from("KAB 123X");
+	let vehicle_sales_amount = 350;
+	let vehicle_payment_mode: String = String::from("cash");
+	let interior_cleaning: bool = true;
+	let exterior_cleaning: bool = false;
+	let engine_cleaning: bool = true;
+	let undercarriage_cleaning: bool = false;
+	let vehicle_transaction_date: String = String::from("12-03-2021, 01:00 pm");
+	let vehicle_sales_data = HistoryVehicleSalesData { vehicle_make: vehicle_make, vehicle_model: vehicle_model, vehicle_regno: vehicle_regno, sales_amount: vehicle_sales_amount, payment_mode: vehicle_payment_mode, interior_cleaning: interior_cleaning, exterior_cleaning: exterior_cleaning, engine_cleaning: engine_cleaning, undercarriage_cleaning: undercarriage_cleaning, transaction_date: vehicle_transaction_date };
+	vehicle_sales_data
+}
+fn get_vehicle_sales_data_2() -> HistoryVehicleSalesData {
+	let vehicle_make: String = String::from("AUDI");
+	let vehicle_model: String = String::from("AUDI-A3");
+	let vehicle_regno: String = String::from("KAC 003V");
+	let vehicle_sales_amount = 340;
+	let vehicle_payment_mode: String = String::from("m-pesa");
+	let interior_cleaning: bool = false;
+	let exterior_cleaning: bool = true;
+	let engine_cleaning: bool = false;
+	let undercarriage_cleaning: bool = true;
+	let vehicle_transaction_date: String = String::from("12-03-2021, 03:00 pm");
+	let vehicle_sales_data = HistoryVehicleSalesData { vehicle_make: vehicle_make, vehicle_model: vehicle_model, vehicle_regno: vehicle_regno, sales_amount: vehicle_sales_amount, payment_mode: vehicle_payment_mode, interior_cleaning: interior_cleaning, exterior_cleaning: exterior_cleaning, engine_cleaning: engine_cleaning, undercarriage_cleaning: undercarriage_cleaning, transaction_date: vehicle_transaction_date };
+	vehicle_sales_data
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
@@ -1049,11 +1503,15 @@ async fn main() -> std::io::Result<()> {
 			.service(get_vehicle_cleaning_type_cost_data)
 			.service(get_carpet_cleaning_type_cost_data)
 			.service(add_sales_data)
+			.service(get_all_sales_data)
+			.service(get_search_sales_data)
             .route("/", web::get().to(greet))
             .route("/{name}", web::get().to(greet))
     })
     //.bind("127.0.0.1:8080")?
-	.bind("192.168.3.22:9247")?
+	//.bind("192.168.3.22:9247")?
+	//.bind("127.0.0.1:9247")? //accessible from the machine only
+	.bind("0.0.0.0:9247")? //accessible from outside the machine itself
     .run()
     .await
 }
