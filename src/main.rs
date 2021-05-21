@@ -4,6 +4,8 @@ use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
 use serde::{Serialize, Deserialize};
 use base64::{decode};//encode
 use std::str;
+use mysql::*;
+use mysql::prelude::*;
 
 //, Result
 
@@ -231,12 +233,64 @@ struct HistoryCarpetSalesData {
 }
 
 #[derive(Serialize)]
+struct HistoryCustomerSalesData {
+    cust_name: String,
+	mobile_no: String,
+	//cleaning_service: String,
+}
+
+#[derive(Serialize)]
 struct HistorySalesResponseData {
-    status_code: u32,
-	status_description: String,
+	customer_sales_data: HistoryCustomerSalesData,
 	carpet_sales_data: Vec<HistoryCarpetSalesData>,
 	vehicle_sales_data: Vec<HistoryVehicleSalesData>,
 }
+
+#[derive(Serialize)]
+struct HistorySalesBatchData {
+    batch_no: String,
+    sales_data: HistorySalesResponseData,
+}
+
+#[derive(Serialize)]
+struct HistorySalesBatchResponseData {
+    status_code: u32,
+	status_description: String,
+	sales_batch_data: Vec<HistorySalesBatchData>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct SalesBatchDataTable {
+	cust_name: String,
+    mobile_no: String,
+    cleaning_service: String,
+    sales_amount: i32,
+	paid_amount: i32,
+    payment_mode: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct SalesDataTable {
+    batch_no: i32,
+    cleaning_service: String,
+	carpet_size: String,
+    carpet_colour: String,
+    vehicle_make: String,
+    vehicle_model: String,
+    vehicle_regno: String,
+    interior_cleaning: bool,
+    exterior_cleaning: bool,
+    engine_cleaning: bool,
+    undercarriage_cleaning: bool,
+    sales_amount: i32,
+}
+/*	
+let url = get_conn_url();
+
+let pool = Pool::new(url)?;
+
+let mut conn = pool.get_conn()?;
+*/
 
 #[get("/hello")]
 async fn hello_world() -> impl Responder {
@@ -942,7 +996,7 @@ async fn get_carpet_cleaning_type_cost_data(carpet_cleaning_type_cost_data: web:
 
 /// deserialize `SalesBatchData` from request's body
 #[post("/addsalesdata")]
-async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRequest) -> impl Responder {
+async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
 	//let channel_type = HeaderName::from_lowercase(b"channeltype").unwrap_or(&k);
 	//let channel_type = HeaderValue::from_str("ChannelType").unwrap();
@@ -1022,8 +1076,8 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	//let batch_no = &sales_data.batch_no;
 	//let batch_no = &sales_data.batch_no.as_ref().unwrap_or(k.to_owned());
 	//let k = String::from(""); //Default value for string variables.
-	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
-	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	//let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	//let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
 	let batch_no = &sales_batch_data.batch_no.as_ref().unwrap_or(&k);
 	let sales_batch_data = &sales_batch_data.sales_data;
 	/*
@@ -1044,32 +1098,22 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	println!("carpet_size is {:?}", carpet_size);
 	println!("sales_amount_c is {:?}", sales_amount_c);
 	*/
+	/*
+	let mut cust_name = String::from("");
+	let mut mobile_no = String::from("");
+	let mut sales_amount = 0;
+	let paid_amount = 0;
+	//let mut payment_mode = String::from("");
+	let payment_mode = String::from("mpesa");
+	let mut vehicle_make = String::from("");
+	let mut sales_amount_v = String::from("");
+	let mut carpet_size = String::from("");
+	let mut sales_amount_c = String::from("");
+	let mut sales_batch_data_table = SalesBatchDataTable { cust_name: String::from(""), mobile_no: String::from(""), cleaning_service: String::from(""), sales_amount: 0, paid_amount: 0, payment_mode: String::from("") };
+	*/
+	let sales_batch_data_table = get_sales_batch_data(sales_batch_data);
 	
-	let mut cust_name = &k;
-	let mut vehicle_make = &k;
-	let mut sales_amount_v = &k;
-	let mut carpet_size = &k;
-	let mut sales_amount_c = &k;
-	
-	for sales_data in sales_batch_data.iter() {
-		cust_name = &sales_data.customer_sales_data.cust_name;
-		vehicle_make = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make;
-		sales_amount_v = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).sales_amount;
-		carpet_size = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size;
-		sales_amount_c = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount;
-		
-		let c1 = &String::from("risper muite").to_lowercase();
-		println!("Check 1 {}", cust_name.to_lowercase().eq(c1));
-		/*
-		match cust_name {
-            c1 => println!("This is a match 1!"),
-			c2 => println!("This is a match 2!"),
-            _ => println!("Match failed"),
-			//_ => println!("Hello {}", cust_name),
-        }
-		*/
-	}
-	
+	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("batch_no - "), batch_no);
 	let b = format!("{}{}", String::from("cust_name - "), cust_name);
@@ -1080,6 +1124,24 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	let g = format!("{}{}{}{}{}{}{}{}{}{}{}", a, x, b, x, c, x, d, x, e, x, f);
 	println!("details is {:?}", g);
 	//let details = format!("{}{}", borrowed_string, another_borrowed_string);
+	*/
+	
+	//Tests only
+
+	//let sales_batch_data_table = SalesBatchDataTable { cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from(""), sales_amount: 1490, paid_amount: 0, payment_mode: String::from("mpesa") };
+	let batch_no: i32 = create_sales_batch_data(&data, sales_batch_data_table);
+	/*
+	let sales_data_table = vec![
+    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("carpet"), carpet_size: String::from("5 by 8"), carpet_colour: String::from("blue"), 
+			  vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false,
+			  sales_amount: 930 },
+    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("vehicle"), carpet_size: String::from(""), carpet_colour: String::from(""), 
+			  vehicle_make: String::from("Toyota"), vehicle_model: String::from("Corolla"), vehicle_regno: String::from("kag 283j"), interior_cleaning: true, exterior_cleaning: false, engine_cleaning: true, undercarriage_cleaning: false,
+			  sales_amount: 560 },
+	];
+	*/
+	let sales_data_table = get_sales_data(sales_batch_data, batch_no);
+	let successful: bool = create_sales_data(data, batch_no, sales_data_table);
 	
 	let response_data = ResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful")};
 	web::Json(response_data)
@@ -1162,8 +1224,10 @@ async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req
 	
 	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &history_sales_data.mobile_no.as_ref().unwrap_or(&k);
-	let mut k = Vec::new();
-	let mut m = Vec::new();
+	let mut k_1 = Vec::new();
+	let mut k_2 = Vec::new();
+	let mut m_1 = Vec::new();
+	let mut m_2 = Vec::new();
 	/*
 	//Carpets
 	let carpet_size_1: String = String::from("6 by 9");
@@ -1203,15 +1267,20 @@ async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req
 	*/
 	//Carpets	
 	let carpet_sales_data_1 = get_carpet_sales_data_1();
-	k.push(carpet_sales_data_1);
+	k_1.push(carpet_sales_data_1);
 	let carpet_sales_data_2 = get_carpet_sales_data_2();
-	k.push(carpet_sales_data_2);
+	k_2.push(carpet_sales_data_2);
 	
 	//Vehicles
 	let vehicle_sales_data_1 = get_vehicle_sales_data_1();
-	m.push(vehicle_sales_data_1);
+	m_1.push(vehicle_sales_data_1);
 	let vehicle_sales_data_2 = get_vehicle_sales_data_2();
-	m.push(vehicle_sales_data_2);
+	m_2.push(vehicle_sales_data_2);
+	
+	//Customers
+	let customer_sales_data_1 = get_customer_sales_data_1();	
+	let customer_sales_data_2 = get_customer_sales_data_2();	
+	
 	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
@@ -1220,7 +1289,16 @@ async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req
 	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
 	println!("details is {:?}", d);
 	*/
-	let response_data = HistorySalesResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), carpet_sales_data: k, vehicle_sales_data: m };
+	let history_sales_response_data_1 = HistorySalesResponseData {customer_sales_data: customer_sales_data_1, carpet_sales_data: k_1, vehicle_sales_data: m_1 };
+	let history_sales_response_data_2 = HistorySalesResponseData {customer_sales_data: customer_sales_data_2, carpet_sales_data: k_2, vehicle_sales_data: m_2 };
+	let batch_no_1: String = String::from("1");
+	let history_sales_batch_data_1 = HistorySalesBatchData {batch_no: batch_no_1, sales_data: history_sales_response_data_1 };
+	let batch_no_2: String = String::from("2");
+	let history_sales_batch_data_2 = HistorySalesBatchData {batch_no: batch_no_2, sales_data: history_sales_response_data_2 };
+	let mut n = Vec::new();
+	n.push(history_sales_batch_data_1);
+	n.push(history_sales_batch_data_2);
+	let response_data = HistorySalesBatchResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), sales_batch_data: n };
 	web::Json(response_data)
 }
 
@@ -1387,6 +1465,9 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 	let vehicle_sales_data_4 = get_vehicle_sales_data_2();
 	let vehicle_sales_data_5 = get_vehicle_sales_data_2();
 	
+	//Customers
+	let customer_sales_data_1 = get_customer_sales_data_1();
+	
 	let a_1 = String::from("nicole");
 	let a_2 = String::from("paul");
 	let a_3 = String::from("254723083761");
@@ -1439,9 +1520,15 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 		false => println!("vehicle_regno - false"),
 	}
 
-	let response_data = HistorySalesResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), carpet_sales_data: k, vehicle_sales_data: m };
+	let history_sales_response_data_1 = HistorySalesResponseData {customer_sales_data: customer_sales_data_1, carpet_sales_data: k, vehicle_sales_data: m };
+	let batch_no_1: String = String::from("1");
+	let history_sales_batch_data_1 = HistorySalesBatchData {batch_no: batch_no_1, sales_data: history_sales_response_data_1 };
+	let mut n = Vec::new();
+	n.push(history_sales_batch_data_1);
+	let response_data = HistorySalesBatchResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), sales_batch_data: n };
 	web::Json(response_data)
 }
+
 fn get_carpet_sales_data_1() -> HistoryCarpetSalesData {
 	let carpet_size: String = String::from("6 by 9");
 	let carpet_colour: String = String::from("PURPLE");
@@ -1488,11 +1575,312 @@ fn get_vehicle_sales_data_2() -> HistoryVehicleSalesData {
 	let vehicle_sales_data = HistoryVehicleSalesData { vehicle_make: vehicle_make, vehicle_model: vehicle_model, vehicle_regno: vehicle_regno, sales_amount: vehicle_sales_amount, payment_mode: vehicle_payment_mode, interior_cleaning: interior_cleaning, exterior_cleaning: exterior_cleaning, engine_cleaning: engine_cleaning, undercarriage_cleaning: undercarriage_cleaning, transaction_date: vehicle_transaction_date };
 	vehicle_sales_data
 }
+fn get_customer_sales_data_1() -> HistoryCustomerSalesData {
+	let cust_name: String = String::from("nicole");
+	let mobile_no: String = String::from("254723083761");
+	let customer_sales_data = HistoryCustomerSalesData { cust_name: cust_name, mobile_no: mobile_no };
+	customer_sales_data
+}
+fn get_customer_sales_data_2() -> HistoryCustomerSalesData {
+	let cust_name: String = String::from("paul");
+	let mobile_no: String = String::from("254723083760");
+	let customer_sales_data = HistoryCustomerSalesData { cust_name: cust_name, mobile_no: mobile_no };
+	customer_sales_data
+}
+
+fn get_conn_url() -> String {
+	let url = "mysql://ussd:arunga@2030!@localhost:3306/carwash_n_spa";
+	String::from(url)
+}
+
+fn create_sales_batch_data(data: &web::Data<Pool>, sales_batch_data: SalesBatchDataTable) -> i32  {
+	let mut batch_no: i32 = 0;
+	
+	match data
+        .get_conn()
+		.and_then(|mut conn| insert_sales_batch_data(&mut conn, sales_batch_data))
+    {
+        Ok(sales_batch_no) => {
+            //println!("Successful to open DB connection."),
+			//println!("Successful insert to DB connection. {:?}", sales_batch_id);
+			batch_no = sales_batch_no as i32;
+        },
+        Err(e) => println!("Failed to open DB connection. {:?}", e),
+    }
+	
+	batch_no
+}
+
+fn create_sales_data(data: web::Data<Pool>, batch_no: i32, sales_data: Vec<SalesDataTable>) -> bool {
+	let mut successful: bool = false;
+	
+	match data
+        .get_conn()
+		.and_then(|mut conn| insert_sales_data(&mut conn, batch_no, sales_data))
+    {
+        Ok(sales_no) => {
+            //println!("Successful to open DB connection."),
+			//println!("Successful insert to DB connection. {:?}", sales_no);
+			successful = true;
+        },
+        Err(e) => println!("Failed to open DB connection. {:?}", e),
+    }
+	
+	successful
+}
+
+/*
+fn insert_sales_data(
+    conn: &mut PooledConn) -> std::result::Result<u64, mysql::error::Error> {
+	/*
+    conn.exec_drop(
+        "insert into PRODUCT (product_code, price, name, last_update) values (:product_code, :price, :name, :last_update)",
+        params! {
+            "product_code" => &product.code,
+            "price" => product.price,
+            "name" => &product.product_name,
+            "last_update" => today(),
+        },
+    )
+    .and_then(|_| Ok(conn.last_insert_id()))
+	*/
+	let sales_batch_data = SalesBatchDataTable { cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from(""), sales_amount: 1490, paid_amount: 0, payment_mode: String::from("mpesa") };
+	
+	//let mut batch_no: i32 = 1;
+	
+	// Now let's insert sales batch data to the database
+	let my_result =
+	conn.exec_drop(
+        "insert into incomingsalesbatchdatarequests (cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode) values (:cust_name, :mobile_no, :cleaning_service, :sales_amount, :paid_amount, :payment_mode)",
+        params! {
+            "cust_name" => sales_batch_data.cust_name,
+            "mobile_no" => sales_batch_data.mobile_no,
+            "cleaning_service" => sales_batch_data.cleaning_service,
+            "sales_amount" => sales_batch_data.sales_amount,
+			"paid_amount" => sales_batch_data.paid_amount,
+			"payment_mode" => sales_batch_data.payment_mode,
+        },
+    )
+	.and_then(|_| Ok(conn.last_insert_id()));
+	
+	let batch_no: i32 =
+		match my_result
+		{
+			Ok(s) => {
+				//batch_no = i32::try_from(s);
+				s as i32
+			},
+			Err(e) => {
+				//batch_no = i32::try_from(s);
+				0
+			},
+		};
+	
+	let sales_data = vec![
+    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("carpet"), carpet_size: String::from("5 by 8"), carpet_colour: String::from("blue"), 
+			  vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false,
+			  sales_amount: 930 },
+    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("vehicle"), carpet_size: String::from(""), carpet_colour: String::from(""), 
+			  vehicle_make: String::from("Toyota"), vehicle_model: String::from("Corolla"), vehicle_regno: String::from("kag 283j"), interior_cleaning: true, exterior_cleaning: false, engine_cleaning: true, undercarriage_cleaning: false,
+			  sales_amount: 560 },
+	];
+	
+	// Now let's insert sales data to the database
+	conn.exec_batch(
+		r"insert into incomingsalesdatarequests (batch_no, cleaning_service, carpet_size, carpet_colour, vehicle_make, vehicle_model, vehicle_regno, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, sales_amount)
+		  values (:batch_no, :cleaning_service, :carpet_size, :carpet_colour, :vehicle_make, :vehicle_model, :vehicle_regno, :interior_cleaning, :exterior_cleaning, :engine_cleaning, :undercarriage_cleaning, :sales_amount)",
+		sales_data.iter().map(|s| params! {
+			"batch_no" => s.batch_no,
+			"cleaning_service" => &s.cleaning_service,
+			"carpet_size" => &s.carpet_size,
+			"carpet_colour" => &s.carpet_colour,
+			"vehicle_make" => &s.vehicle_make,
+			"vehicle_model" => &s.vehicle_model,
+			"vehicle_regno" => &s.vehicle_regno,
+			"interior_cleaning" => s.interior_cleaning,
+			"exterior_cleaning" => s.exterior_cleaning,
+			"engine_cleaning" => s.engine_cleaning,
+			"undercarriage_cleaning" => s.undercarriage_cleaning,
+			"sales_amount" => s.sales_amount,
+		})
+	)//?;
+	.and_then(|_| Ok(conn.last_insert_id()))
+	
+}
+*/
+fn insert_sales_batch_data(
+    conn: &mut PooledConn, sales_batch_data: SalesBatchDataTable) -> std::result::Result<u64, mysql::error::Error> {
+	
+	//let mut batch_no: i32 = 0;
+	
+	// Now let's insert sales batch data to the database
+	//let my_result =
+	conn.exec_drop(
+        "insert into incomingsalesbatchdatarequests (cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode) values (:cust_name, :mobile_no, :cleaning_service, :sales_amount, :paid_amount, :payment_mode)",
+        params! {
+            "cust_name" => sales_batch_data.cust_name,
+            "mobile_no" => sales_batch_data.mobile_no,
+            "cleaning_service" => sales_batch_data.cleaning_service,
+            "sales_amount" => sales_batch_data.sales_amount,
+			"paid_amount" => sales_batch_data.paid_amount,
+			"payment_mode" => sales_batch_data.payment_mode,
+        },
+    )
+	.and_then(|_| Ok(conn.last_insert_id()))
+	/*
+	let batch_no: i32 =
+		match my_result
+		{
+			Ok(s) => {
+				//batch_no = i32::try_from(s);
+				s as i32
+			},
+			Err(e) => {
+				//batch_no = i32::try_from(s);
+				0
+			},
+		};
+	
+	batch_no
+	*/
+}
+
+fn insert_sales_data(
+    conn: &mut PooledConn, batch_no: i32, sales_data: Vec<SalesDataTable>) -> std::result::Result<u64, mysql::error::Error> {
+	
+	// Now let's insert sales data to the database
+	conn.exec_batch(
+		r"insert into incomingsalesdatarequests (batch_no, cleaning_service, carpet_size, carpet_colour, vehicle_make, vehicle_model, vehicle_regno, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, sales_amount)
+		  values (:batch_no, :cleaning_service, :carpet_size, :carpet_colour, :vehicle_make, :vehicle_model, :vehicle_regno, :interior_cleaning, :exterior_cleaning, :engine_cleaning, :undercarriage_cleaning, :sales_amount)",
+		sales_data.iter().map(|s| params! {
+			"batch_no" => s.batch_no,
+			"cleaning_service" => &s.cleaning_service,
+			"carpet_size" => &s.carpet_size,
+			"carpet_colour" => &s.carpet_colour,
+			"vehicle_make" => &s.vehicle_make,
+			"vehicle_model" => &s.vehicle_model,
+			"vehicle_regno" => &s.vehicle_regno,
+			"interior_cleaning" => s.interior_cleaning,
+			"exterior_cleaning" => s.exterior_cleaning,
+			"engine_cleaning" => s.engine_cleaning,
+			"undercarriage_cleaning" => s.undercarriage_cleaning,
+			"sales_amount" => s.sales_amount,
+		})
+	)
+	.and_then(|_| Ok(1))
+	
+}
+
+fn get_sales_batch_data(sales_batch_data: &Vec<SalesData>) -> SalesBatchDataTable  {
+	let mut sales_batch_data_table = SalesBatchDataTable { cust_name: String::from(""), mobile_no: String::from(""), cleaning_service: String::from(""), sales_amount: 0, paid_amount: 0, payment_mode: String::from("") };
+	
+	let mut cust_name = String::from("");
+	let mut mobile_no = String::from("");
+	let mut sales_amount = 0;
+	let paid_amount = 0;
+	//let mut payment_mode = String::from("");
+	let payment_mode = String::from("mpesa");
+	//let mut vehicle_make = String::from("");
+	let mut sales_amount_v = String::from("");
+	//let mut carpet_size = String::from("");
+	let mut sales_amount_c = String::from("");
+	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	
+	for sales_data in sales_batch_data.iter() {
+		//cust_name = sales_data.customer_sales_data.cust_name;
+		cust_name = sales_data.customer_sales_data.cust_name.to_string();
+		mobile_no = sales_data.customer_sales_data.mobile_no.to_string();
+		//sales_amount = sales_data.customer_sales_data.sales_amount;
+		//paid_amount = sales_data.customer_sales_data.paid_amount;
+		//payment_mode = &sales_data.customer_sales_data.payment_mode;
+		//vehicle_make = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make.to_string();
+		sales_amount_v = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).sales_amount.to_string();
+		//carpet_size = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size.to_string();
+		sales_amount_c = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount.to_string();
+		
+		let vehicle_amount = 
+		match sales_amount_v.parse::<i32>() {
+		  Ok(a) => a,
+		  Err(e) => 0,
+		};
+		
+		let carpet_amount = 
+		match sales_amount_c.parse::<i32>() {
+		  Ok(a) => a,
+		  Err(e) => 0,
+		};
+		
+		sales_amount = vehicle_amount + carpet_amount; //test only
+		//Assign values to struct variable
+		sales_batch_data_table = SalesBatchDataTable { cust_name: cust_name, mobile_no: mobile_no, cleaning_service: String::from(""), sales_amount: sales_amount, paid_amount: paid_amount, payment_mode: payment_mode.to_string() };
+
+	}
+	
+	sales_batch_data_table
+}
+
+fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<SalesDataTable>  {
+	let mut sales_data_table = Vec::new();
+	let mut vehicle_make = String::from("");
+	let mut vehicle_model = String::from("");
+	let mut vehicle_regno = String::from("");
+	let mut sales_amount_v = String::from("");
+	let mut sales_amount_c = String::from("");
+	let mut carpet_size = String::from("");
+	let mut carpet_colour = String::from("");
+	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	
+	for sales_data in sales_batch_data.iter() {
+		vehicle_make = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make.to_string();
+		vehicle_model = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_model.to_string();
+		vehicle_regno = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_regno.to_string();
+		sales_amount_v = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).sales_amount.to_string();
+		carpet_size = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size.to_string();
+		carpet_colour = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_colour.to_string();
+		sales_amount_c = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount.to_string();
+		
+		//let c1 = &String::from("risper muite").to_lowercase();
+		
+		let vehicle_amount = 
+		match sales_amount_v.parse::<i32>() {
+		  Ok(a) => a,
+		  Err(e) => 0,
+		};
+		
+		let carpet_amount = 
+		match sales_amount_c.parse::<i32>() {
+		  Ok(a) => a,
+		  Err(e) => 0,
+		};
+		
+		
+		
+		//Assign values to struct variable
+		let sales_data_1 = SalesDataTable { batch_no: batch_no, cleaning_service: String::from("carpet"), carpet_size: carpet_size, carpet_colour: carpet_colour, 
+			  vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false,
+			  sales_amount: carpet_amount };
+			  
+		let sales_data_2 = SalesDataTable { batch_no: batch_no, cleaning_service: String::from("vehicle"), carpet_size: String::from(""), carpet_colour: String::from(""), 
+			  vehicle_make: vehicle_make, vehicle_model: vehicle_model, vehicle_regno: vehicle_regno, interior_cleaning: true, exterior_cleaning: false, engine_cleaning: true, undercarriage_cleaning: false,
+			  sales_amount: vehicle_amount };
+			  
+		sales_data_table.push(sales_data_1);	  
+		sales_data_table.push(sales_data_2);	 
+
+	}
+	
+	sales_data_table
+}
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() {
+	//async fn main() -> std::io::Result<()> {
+	/*
     HttpServer::new(|| {
         App::new()
+		    .app_data(shared_data.clone())
 		    .service(hello_world)
             .service(current_temperature)
 			.service(get_person)
@@ -1514,4 +1902,45 @@ async fn main() -> std::io::Result<()> {
 	.bind("0.0.0.0:9247")? //accessible from outside the machine itself
     .run()
     .await
+	*/
+	let url = get_conn_url();
+     
+    let pool = match Pool::new(url) {
+        Ok(pool) => pool,
+        Err(e) => {
+            println!("Failed to open DB connection. {:?}", e); return;
+        }
+    };
+ 
+    let shared_data = web::Data::new(pool);
+	
+	let server = match HttpServer::new(move || {
+        App::new()
+            .app_data(shared_data.clone())
+		    .service(hello_world)
+            .service(current_temperature)
+			.service(get_person)
+			.service(get_vehicle_make_data)
+			.service(get_vehicle_model_data)
+			.service(get_carpet_type_size_data)
+			.service(get_carpet_type_colour_data)
+			.service(get_vehicle_cleaning_type_cost_data)
+			.service(get_carpet_cleaning_type_cost_data)
+			.service(add_sales_data)
+			.service(get_all_sales_data)
+			.service(get_search_sales_data)
+            .route("/", web::get().to(greet))
+            .route("/{name}", web::get().to(greet))
+    }).bind("0.0.0.0:9247") {
+        Ok(s) => s,
+        Err(e) => {
+            println!("Failed to bind port. {:?}", e);
+            return;
+        }
+    };
+ 
+    match server.run().await {
+        Ok(_) => println!("Server exited normally."),
+        Err(e) => println!("Server exited with error: {:?}", e),
+    };
 }
