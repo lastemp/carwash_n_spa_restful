@@ -53,6 +53,10 @@ struct VehicleSalesData {
 	vehicle_regno: String,
 	sales_amount: String,
 	payment_mode: String,
+	interior_cleaning: bool,
+	exterior_cleaning: bool,
+	engine_cleaning: bool,
+	undercarriage_cleaning: bool,
 }
 
 #[derive(Deserialize)]
@@ -362,31 +366,31 @@ async fn get_vehicle_make_data(vehicle_make_data: web::Json<VehicleMakeData>, re
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -395,31 +399,31 @@ async fn get_vehicle_make_data(vehicle_make_data: web::Json<VehicleMakeData>, re
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	println!("channel_type - {:?}", channel_type);
+	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &vehicle_make_data.mobile_no.as_ref().unwrap_or(&k);
 	let vehicle_make = String::from("ALFA ROMEO|ANY|ASHOK|AUDI|BACKHOE|BAJAJ|BEDFORD|BEIBEN|BEIFANG|BHACHU|BMW|BOBCAT|BOMAG|BULLDOZER|BUS|CADILLAC|CAM|CANTER|CASE|CAT|CHEVROLET|CHRYSLER|CITROEN|CMC|CRANE|DAEWOO|DAF|DAIHATSU|DODGE|DOLL|DOZER|DUMPER|EICHER|EXCAVATOR|FAW|FERRARI|FIAT|FORD|FOTON|GEELEY|GRADER|GREATWALL|HAMM|HANS KENYA|HINO|HITACHI|HONDA|HOWO|HUMMER|HYUNDAI|ISUZU|IVECO|JAC|JAGUAR|JCB|JEEP|JMC|JOHN-DEERE|KEHAR|KIA|KLUGER|KOMATSU|LANCER|LANDROVER|LEEBOY|LEXUS|LEYLAND|LEYLANDDAF|LIEBHERR|LOADER|LORRY|M/CYCLE|MACK|MAHINDRA|MAN|MARUTI|MASSEY|MAZDA|MERCEDES|MINI|MITSUBISHI|MIXER|MORRIS|NEWHOLLAND|NIS_DIE|NISSAN|OCEAN|OPEL|PACER|PEUGEOT|PORSCHE|PRIMEMOVER|PUCH|RANDON|RENAULT|ROLLER|ROLLS|ROVER|SAAB|SAILOR|SCANIA|SDLG|SHACMAN|SHOVEL|SINO|SKODA|SONALIKA|SSANG YONG|SUBARU|SUZUKI|TADANO|TANKER|TATA|TEREX|TIGER|TIGGO|TIPPER|TOYOTA|TRACTOR|TRAILER|TRUCK|TUKTUK|TVS|UD|VAUXHALL|VOLKSWAGEN|VOLVO|WUZHENG|XINKAI|YAMAHA|YARI|");
 	let mut k = Vec::new();
@@ -441,14 +445,14 @@ async fn get_vehicle_make_data(vehicle_make_data: web::Json<VehicleMakeData>, re
 	k.push(engine_item);
 	let under_carriage_item = VehicleCleaningTypeCostDetails { cleaning_type_name: under_carriage_cleaning_name, amount: under_carriage_cleaning_cost };
 	k.push(under_carriage_item);
-	
+	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
 	let b = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
 	let c = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
 	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
 	//println!("details is {:?}", d);
-	
+	*/
 	let response_data = VehicleMakeResponseData {message_data: vehicle_make.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
 	web::Json(response_data)
 }
@@ -471,31 +475,31 @@ async fn get_vehicle_model_data(vehicle_model_data: web::Json<VehicleModelData>,
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -504,31 +508,31 @@ async fn get_vehicle_model_data(vehicle_model_data: web::Json<VehicleModelData>,
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	println!("channel_type - {:?}", channel_type);
+	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &vehicle_model_data.mobile_no.as_ref().unwrap_or(&k);
 	//let mut vehicle_make = &vehicle_model_data.vehicle_make.as_ref().unwrap_or(&k);
 	let vehicle_make = &vehicle_model_data.vehicle_make.as_ref().unwrap_or(&k);
@@ -572,13 +576,14 @@ async fn get_vehicle_model_data(vehicle_model_data: web::Json<VehicleModelData>,
             _ => println!("Match failed"),
         }
 	*/
+	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
 	let b = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
 	let c = format!("{}{}", String::from("vehicle_model - "), vehicle_model);
 	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
 	println!("details is {:?}", d);
-	
+	*/
 	let response_data = VehicleModelResponseData {message_data: vehicle_model.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful")};
 	web::Json(response_data)
 }
@@ -601,31 +606,31 @@ async fn get_carpet_type_size_data(carpet_type_size_data: web::Json<CarpetTypeSi
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -634,31 +639,31 @@ async fn get_carpet_type_size_data(carpet_type_size_data: web::Json<CarpetTypeSi
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	println!("channel_type - {:?}", channel_type);
+	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &carpet_type_size_data.mobile_no.as_ref().unwrap_or(&k);
 	let carpet_type_size = String::from("CARPET SIZE|5 by 8|6 by 9|7 by 10|8 by 11|");
 	let mut k = Vec::new();
@@ -680,14 +685,14 @@ async fn get_carpet_type_size_data(carpet_type_size_data: web::Json<CarpetTypeSi
 	k.push(c_item);
 	let d_item = CarpetCleaningTypeCostDetails { cleaning_size_name: d_size_cleaning_name, amount: d_cleaning_size_cost };
 	k.push(d_item);
-	
+	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
 	let b = format!("{}{}", String::from("carpet_type_size - "), carpet_type_size);
 	let c = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
 	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
 	println!("details is {:?}", d);
-	
+	*/
 	let response_data = CarpetTypeSizeResponseData {message_data: carpet_type_size.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
 	web::Json(response_data)
 }
@@ -1016,31 +1021,31 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -1049,98 +1054,38 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	println!("channel_type - {:?}", channel_type);
-	//let batch_no = &sales_data.batch_no;
-	//let batch_no = &sales_data.batch_no.as_ref().unwrap_or(k.to_owned());
-	//let k = String::from(""); //Default value for string variables.
-	//let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
-	//let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	//println!("channel_type - {:?}", channel_type);
 	let batch_no = &sales_batch_data.batch_no.as_ref().unwrap_or(&k);
 	let sales_batch_data = &sales_batch_data.sales_data;
-	/*
-	let cust_name = &sales_data.customer_sales_data.cust_name;
-	//let vehicle_make = &sales_data.vehicle_sales_data.vehicle_make;
-	let vehicle_make = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make;
-	//let sales_amount_v = &sales_data.vehicle_sales_data.sales_amount;
-	let sales_amount_v = &sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).sales_amount;
-	let carpet_size = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size;
-	let sales_amount_c = &sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount;
-	*/
 	
-	/*
-	println!("batch_no is {:?}", batch_no);
-	println!("cust_name is {:?}", cust_name);
-	println!("vehicle_make is {:?}", vehicle_make);
-	println!("sales_amount_v is {:?}", sales_amount_v);
-	println!("carpet_size is {:?}", carpet_size);
-	println!("sales_amount_c is {:?}", sales_amount_c);
-	*/
-	/*
-	let mut cust_name = String::from("");
-	let mut mobile_no = String::from("");
-	let mut sales_amount = 0;
-	let paid_amount = 0;
-	//let mut payment_mode = String::from("");
-	let payment_mode = String::from("mpesa");
-	let mut vehicle_make = String::from("");
-	let mut sales_amount_v = String::from("");
-	let mut carpet_size = String::from("");
-	let mut sales_amount_c = String::from("");
-	let mut sales_batch_data_table = SalesBatchDataTable { cust_name: String::from(""), mobile_no: String::from(""), cleaning_service: String::from(""), sales_amount: 0, paid_amount: 0, payment_mode: String::from("") };
-	*/
 	let sales_batch_data_table = get_sales_batch_data(sales_batch_data);
-	
-	/*
-	let x = String::from(" ");
-	let a = format!("{}{}", String::from("batch_no - "), batch_no);
-	let b = format!("{}{}", String::from("cust_name - "), cust_name);
-	let c = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
-	let d = format!("{}{}", String::from("sales_amount_v - "), sales_amount_v);
-	let e = format!("{}{}", String::from("carpet_size - "), carpet_size);
-	let f = format!("{}{}", String::from("sales_amount_c - "), sales_amount_c);
-	let g = format!("{}{}{}{}{}{}{}{}{}{}{}", a, x, b, x, c, x, d, x, e, x, f);
-	println!("details is {:?}", g);
-	//let details = format!("{}{}", borrowed_string, another_borrowed_string);
-	*/
-	
-	//Tests only
 
-	//let sales_batch_data_table = SalesBatchDataTable { cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from(""), sales_amount: 1490, paid_amount: 0, payment_mode: String::from("mpesa") };
 	let batch_no: i32 = create_sales_batch_data(&data, sales_batch_data_table);
-	/*
-	let sales_data_table = vec![
-    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("carpet"), carpet_size: String::from("5 by 8"), carpet_colour: String::from("blue"), 
-			  vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false,
-			  sales_amount: 930 },
-    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("vehicle"), carpet_size: String::from(""), carpet_colour: String::from(""), 
-			  vehicle_make: String::from("Toyota"), vehicle_model: String::from("Corolla"), vehicle_regno: String::from("kag 283j"), interior_cleaning: true, exterior_cleaning: false, engine_cleaning: true, undercarriage_cleaning: false,
-			  sales_amount: 560 },
-	];
-	*/
+	
 	let sales_data_table = get_sales_data(sales_batch_data, batch_no);
 	let successful: bool = create_sales_data(data, batch_no, sales_data_table);
 	
@@ -1166,31 +1111,31 @@ async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -1199,108 +1144,33 @@ async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
 	//println!("channel_type - {:?}", channel_type);
-	let mobile_no = &history_sales_data.mobile_no.as_ref().unwrap_or(&k);
-	let mut k_1 = Vec::new();
-	let mut k_2 = Vec::new();
-	let mut m_1 = Vec::new();
-	let mut m_2 = Vec::new();
-	/*
-	//Carpets
-	let carpet_size_1: String = String::from("6 by 9");
-	let carpet_colour_1: String = String::from("PURPLE");
-	let carpet_sales_amount_1 = 120;
-	let carpet_payment_mode_1: String = String::from("m-pesa");
-	let carpet_transaction_date_1: String = String::from("10-03-2021, 07:29 pm");
+	//let mobile_no = &history_sales_data.mobile_no.as_ref().unwrap_or(&k);
 	
-	let carpet_size_2: String = String::from("5 by 8");
-	let carpet_colour_2: String = String::from("BLUE");
-	let carpet_sales_amount_2 = 130;
-	let carpet_payment_mode_2: String = String::from("cash");
-	let carpet_transaction_date_2: String = String::from("12-03-2021, 02:15 pm");
-	
-	//Vehicles
-	let vehicle_make_1: String = String::from("BMW");
-	let vehicle_model_1: String = String::from("BMW 316I");
-	let vehicle_regno_1: String = String::from("KAB 123X");
-	let vehicle_sales_amount_1 = 350;
-	let vehicle_payment_mode_1: String = String::from("cash");
-	let interior_cleaning_1: bool = true;
-	let exterior_cleaning_1: bool = false;
-	let engine_cleaning_1: bool = true;
-	let undercarriage_cleaning_1: bool = false;
-	let vehicle_transaction_date_1: String = String::from("12-03-2021, 01:00 pm");
-	
-	let vehicle_make_2: String = String::from("AUDI");
-	let vehicle_model_2: String = String::from("AUDI-A3");
-	let vehicle_regno_2: String = String::from("KAC 003V");
-	let vehicle_sales_amount_2 = 340;
-	let vehicle_payment_mode_2: String = String::from("m-pesa");
-	let interior_cleaning_2: bool = false;
-	let exterior_cleaning_2: bool = true;
-	let engine_cleaning_2: bool = false;
-	let undercarriage_cleaning_2: bool = true;
-	let vehicle_transaction_date_2: String = String::from("12-03-2021, 03:00 pm");
-	*/
-	//Carpets	
-	let carpet_sales_data_1 = get_carpet_sales_data_1();
-	k_1.push(carpet_sales_data_1);
-	let carpet_sales_data_2 = get_carpet_sales_data_2();
-	k_2.push(carpet_sales_data_2);
-	
-	//Vehicles
-	let vehicle_sales_data_1 = get_vehicle_sales_data_1();
-	m_1.push(vehicle_sales_data_1);
-	let vehicle_sales_data_2 = get_vehicle_sales_data_2();
-	m_2.push(vehicle_sales_data_2);
-	
-	//Customers
-	let customer_sales_data_1 = get_customer_sales_data_1();	
-	let customer_sales_data_2 = get_customer_sales_data_2();	
-	
-	/*
-	let x = String::from(" ");
-	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
-	let b = format!("{}{}", String::from("vehicle_make - "), vehicle_make);
-	let c = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
-	let d = format!("{}{}{}{}{}{}", a, x, b, x, c, x);
-	println!("details is {:?}", d);
-	*/
-	let history_sales_response_data_1 = HistorySalesResponseData {customer_sales_data: customer_sales_data_1, carpet_sales_data: k_1, vehicle_sales_data: m_1 };
-	let history_sales_response_data_2 = HistorySalesResponseData {customer_sales_data: customer_sales_data_2, carpet_sales_data: k_2, vehicle_sales_data: m_2 };
-	let batch_no_1: String = String::from("1");
-	let history_sales_batch_data_1 = HistorySalesBatchData {batch_no: batch_no_1, sales_data: history_sales_response_data_1 };
-	let batch_no_2: String = String::from("2");
-	let history_sales_batch_data_2 = HistorySalesBatchData {batch_no: batch_no_2, sales_data: history_sales_response_data_2 };
-	let mut n = Vec::new();
-	n.push(history_sales_batch_data_1);
-	n.push(history_sales_batch_data_2);
-	//let response_data = HistorySalesBatchResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), sales_batch_data: n };
-	//let sales_batch_data = select_incoming_sales_batch_data_requests(conn);
 	let response_data = get_history_sales_batch_data(&data);
 	web::Json(response_data)
 }
@@ -1324,31 +1194,31 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -1357,178 +1227,37 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	//println!("channel_type - {:?}", channel_type);
 	let search_data = &search_history_sales_data.search_data.as_ref().unwrap_or(&k);
 	let search_by_key = &search_history_sales_data.search_by;
-	let mut k = Vec::new();
-	let mut m = Vec::new();
 	
 	let is_mobile_no = &search_by_key.mobile_no.as_ref().unwrap_or(&j);
 	let is_customer_name = &search_by_key.customer_name.as_ref().unwrap_or(&j);
 	let is_vehicle_regno = &search_by_key.vehicle_regno.as_ref().unwrap_or(&j);
 		
-	//if is_mobile_no {println!("mobile_no - true");}
-	//if is_customer_name {println!("is_customer_name - true");}
-	/*
-	match is_mobile_no {
-		true => println!("mobile_no - true"),
-		false => println!("mobile_no - false"),
-	}
-	match is_customer_name {
-		true => println!("customer_name - true"),
-		false => println!("customer_name - false"),
-	}
-	match is_vehicle_regno {
-		true => println!("vehicle_regno - true"),
-		false => println!("vehicle_regno - false"),
-	}
-	println!("search_data - {:?}", search_data);
-	*/
-	
-	//Carpets
-	/*
-	let carpet_size_1: String = String::from("6 by 9");
-	let carpet_colour_1: String = String::from("PURPLE");
-	let carpet_sales_amount_1 = 120;
-	let carpet_payment_mode_1: String = String::from("m-pesa");
-	let carpet_transaction_date_1: String = String::from("10-03-2021, 07:29 pm");
-	
-	let carpet_size_2: String = String::from("5 by 8");
-	let carpet_colour_2: String = String::from("BLUE");
-	let carpet_sales_amount_2 = 130;
-	let carpet_payment_mode_2: String = String::from("cash");
-	let carpet_transaction_date_2: String = String::from("12-03-2021, 02:15 pm");
-	*/
-	//Vehicles
-	/*
-	let vehicle_make_1: String = String::from("BMW");
-	let vehicle_model_1: String = String::from("BMW 316I");
-	let vehicle_regno_1: String = String::from("KAB 123X");
-	let vehicle_sales_amount_1 = 350;
-	let vehicle_payment_mode_1: String = String::from("cash");
-	let interior_cleaning_1: bool = true;
-	let exterior_cleaning_1: bool = false;
-	let engine_cleaning_1: bool = true;
-	let undercarriage_cleaning_1: bool = false;
-	let vehicle_transaction_date_1: String = String::from("12-03-2021, 01:00 pm");
-	
-	let vehicle_make_2: String = String::from("AUDI");
-	let vehicle_model_2: String = String::from("AUDI-A3");
-	let vehicle_regno_2: String = String::from("KAC 003V");
-	let vehicle_sales_amount_2 = 340;
-	let vehicle_payment_mode_2: String = String::from("m-pesa");
-	let interior_cleaning_2: bool = false;
-	let exterior_cleaning_2: bool = true;
-	let engine_cleaning_2: bool = false;
-	let undercarriage_cleaning_2: bool = true;
-	let vehicle_transaction_date_2: String = String::from("12-03-2021, 03:00 pm");
-	*/
-
-	//Carpets	
-	//let carpet_sales_data_1 = HistoryCarpetSalesData { carpet_size: carpet_size_1, carpet_colour: carpet_colour_1, sales_amount: carpet_sales_amount_1, payment_mode: carpet_payment_mode_1, transaction_date: carpet_transaction_date_1 };
-	let carpet_sales_data_1 = get_carpet_sales_data_1();
-	//k.push(carpet_sales_data_1);
-	//let carpet_sales_data_2 = HistoryCarpetSalesData { carpet_size: carpet_size_2, carpet_colour: carpet_colour_2, sales_amount: carpet_sales_amount_2, payment_mode: carpet_payment_mode_2, transaction_date: carpet_transaction_date_2 };
-	let carpet_sales_data_2 = get_carpet_sales_data_2();
-	//k.push(carpet_sales_data_2);
-	
-	//Vehicles
-	//let vehicle_sales_data_1 = HistoryVehicleSalesData { vehicle_make: vehicle_make_1, vehicle_model: vehicle_model_1, vehicle_regno: vehicle_regno_1, sales_amount: vehicle_sales_amount_1, payment_mode: vehicle_payment_mode_1, interior_cleaning: interior_cleaning_1, exterior_cleaning: exterior_cleaning_1, engine_cleaning: engine_cleaning_1, undercarriage_cleaning: undercarriage_cleaning_1, transaction_date: vehicle_transaction_date_1 };
-	let vehicle_sales_data_1 = get_vehicle_sales_data_1();
-	//m.push(vehicle_sales_data_1);
-	//let vehicle_sales_data_2 = HistoryVehicleSalesData { vehicle_make: vehicle_make_2, vehicle_model: vehicle_model_2, vehicle_regno: vehicle_regno_2, sales_amount: vehicle_sales_amount_2, payment_mode: vehicle_payment_mode_2, interior_cleaning: interior_cleaning_2, exterior_cleaning: exterior_cleaning_2, engine_cleaning: engine_cleaning_2, undercarriage_cleaning: undercarriage_cleaning_2, transaction_date: vehicle_transaction_date_2 };
-	let vehicle_sales_data_2 = get_vehicle_sales_data_2();
-	//m.push(vehicle_sales_data_2);
-	let vehicle_sales_data_3 = get_vehicle_sales_data_1();
-	//m.push(vehicle_sales_data_1);
-	let vehicle_sales_data_4 = get_vehicle_sales_data_2();
-	let vehicle_sales_data_5 = get_vehicle_sales_data_2();
-	
-	//Customers
-	let customer_sales_data_1 = get_customer_sales_data_1();
-	
-	let a_1 = String::from("nicole");
-	let a_2 = String::from("paul");
-	let a_3 = String::from("254723083761");
-	let a_4 = String::from("KAB 123X");
-	let a_5 = String::from("KAC 003V");
-	
-	match is_mobile_no {
-		true => {
-			println!("search_data 1 true - {:?}", search_data.replace(" ","").to_lowercase());
-			if search_data.replace(" ","").to_lowercase().eq(&a_3.replace(" ","").to_lowercase()) {
-				m.push(vehicle_sales_data_5);
-				//println!("search_data 1 true - {:?}", search_data.replace(" ","").to_lowercase());
-			}
-			else{
-			}
-		}
-		,
-		false => println!("mobile_no - false"),
-	}
-	match is_customer_name {
-		true => {
-			if search_data.to_lowercase().eq(&a_1) {
-				k.push(carpet_sales_data_2);
-				m.push(vehicle_sales_data_1);
-			}
-			else if search_data.to_lowercase().eq(&a_2){
-				k.push(carpet_sales_data_1);
-				m.push(vehicle_sales_data_2);
-			}
-			else{
-			}
-		},
-		false => println!("customer_name - false"),
-	}	
-	//println!("search_data 1 - {:?}", search_data.replace(" ","").to_lowercase());
-	//println!("a_4 - {:?}", a_4.replace(" ","").to_lowercase());
-	match is_vehicle_regno {
-		true => {
-			if search_data.replace(" ","").to_lowercase().eq(&a_4.replace(" ","").to_lowercase()) {
-				m.push(vehicle_sales_data_3);
-				println!("search_data 1 true - {:?}", search_data.replace(" ","").to_lowercase());
-			}
-			else if search_data.replace(" ","").to_lowercase().eq(&a_5.replace(" ","").to_lowercase()){
-				m.push(vehicle_sales_data_4);
-				println!("search_data 2 true - {:?}", search_data.replace(" ","").to_lowercase());
-			}
-			else{
-			}
-		},
-		false => println!("vehicle_regno - false"),
-	}
-
-	let history_sales_response_data_1 = HistorySalesResponseData {customer_sales_data: customer_sales_data_1, carpet_sales_data: k, vehicle_sales_data: m };
-	let batch_no_1: String = String::from("1");
-	let history_sales_batch_data_1 = HistorySalesBatchData {batch_no: batch_no_1, sales_data: history_sales_response_data_1 };
-	let mut n = Vec::new();
-	n.push(history_sales_batch_data_1);
-	//let response_data = HistorySalesBatchResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), sales_batch_data: n };
 	let response_data = get_history_search_sales_batch_data(search_data, is_mobile_no, is_customer_name, is_vehicle_regno, &data);
 	web::Json(response_data)
 }
@@ -1633,85 +1362,6 @@ fn create_sales_data(data: web::Data<Pool>, batch_no: i32, sales_data: Vec<Sales
 	successful
 }
 
-/*
-fn insert_sales_data(
-    conn: &mut PooledConn) -> std::result::Result<u64, mysql::error::Error> {
-	/*
-    conn.exec_drop(
-        "insert into PRODUCT (product_code, price, name, last_update) values (:product_code, :price, :name, :last_update)",
-        params! {
-            "product_code" => &product.code,
-            "price" => product.price,
-            "name" => &product.product_name,
-            "last_update" => today(),
-        },
-    )
-    .and_then(|_| Ok(conn.last_insert_id()))
-	*/
-	let sales_batch_data = SalesBatchDataTable { cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from(""), sales_amount: 1490, paid_amount: 0, payment_mode: String::from("mpesa") };
-	
-	//let mut batch_no: i32 = 1;
-	
-	// Now let's insert sales batch data to the database
-	let my_result =
-	conn.exec_drop(
-        "insert into incomingsalesbatchdatarequests (cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode) values (:cust_name, :mobile_no, :cleaning_service, :sales_amount, :paid_amount, :payment_mode)",
-        params! {
-            "cust_name" => sales_batch_data.cust_name,
-            "mobile_no" => sales_batch_data.mobile_no,
-            "cleaning_service" => sales_batch_data.cleaning_service,
-            "sales_amount" => sales_batch_data.sales_amount,
-			"paid_amount" => sales_batch_data.paid_amount,
-			"payment_mode" => sales_batch_data.payment_mode,
-        },
-    )
-	.and_then(|_| Ok(conn.last_insert_id()));
-	
-	let batch_no: i32 =
-		match my_result
-		{
-			Ok(s) => {
-				//batch_no = i32::try_from(s);
-				s as i32
-			},
-			Err(e) => {
-				//batch_no = i32::try_from(s);
-				0
-			},
-		};
-	
-	let sales_data = vec![
-    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("carpet"), carpet_size: String::from("5 by 8"), carpet_colour: String::from("blue"), 
-			  vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false,
-			  sales_amount: 930 },
-    SalesDataTable { batch_no: batch_no, cust_name: String::from("emmanu"), mobile_no: String::from("0723083761"), cleaning_service: String::from("vehicle"), carpet_size: String::from(""), carpet_colour: String::from(""), 
-			  vehicle_make: String::from("Toyota"), vehicle_model: String::from("Corolla"), vehicle_regno: String::from("kag 283j"), interior_cleaning: true, exterior_cleaning: false, engine_cleaning: true, undercarriage_cleaning: false,
-			  sales_amount: 560 },
-	];
-	
-	// Now let's insert sales data to the database
-	conn.exec_batch(
-		r"insert into incomingsalesdatarequests (batch_no, cleaning_service, carpet_size, carpet_colour, vehicle_make, vehicle_model, vehicle_regno, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, sales_amount)
-		  values (:batch_no, :cleaning_service, :carpet_size, :carpet_colour, :vehicle_make, :vehicle_model, :vehicle_regno, :interior_cleaning, :exterior_cleaning, :engine_cleaning, :undercarriage_cleaning, :sales_amount)",
-		sales_data.iter().map(|s| params! {
-			"batch_no" => s.batch_no,
-			"cleaning_service" => &s.cleaning_service,
-			"carpet_size" => &s.carpet_size,
-			"carpet_colour" => &s.carpet_colour,
-			"vehicle_make" => &s.vehicle_make,
-			"vehicle_model" => &s.vehicle_model,
-			"vehicle_regno" => &s.vehicle_regno,
-			"interior_cleaning" => s.interior_cleaning,
-			"exterior_cleaning" => s.exterior_cleaning,
-			"engine_cleaning" => s.engine_cleaning,
-			"undercarriage_cleaning" => s.undercarriage_cleaning,
-			"sales_amount" => s.sales_amount,
-		})
-	)//?;
-	.and_then(|_| Ok(conn.last_insert_id()))
-	
-}
-*/
 fn insert_sales_batch_data(
     conn: &mut PooledConn, sales_batch_data: SalesBatchDataTable) -> std::result::Result<u64, mysql::error::Error> {
 	
@@ -1720,7 +1370,7 @@ fn insert_sales_batch_data(
 	// Now let's insert sales batch data to the database
 	//let my_result =
 	conn.exec_drop(
-        "insert into incomingsalesbatchdatarequests (cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode) values (:cust_name, :mobile_no, :cleaning_service, :sales_amount, :paid_amount, :payment_mode)",
+        "insert into incomingsalesbatchdatarequests (cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode) values (:cust_name, :mobile_no, :cleaning_service, :sales_amount, :paid_amount, :payment_mode);",
         params! {
             "cust_name" => sales_batch_data.cust_name,
             "mobile_no" => sales_batch_data.mobile_no,
@@ -1755,7 +1405,7 @@ fn insert_sales_data(
 	// Now let's insert sales data to the database
 	conn.exec_batch(
 		r"insert into incomingsalesdatarequests (batch_no, cleaning_service, carpet_size, carpet_colour, vehicle_make, vehicle_model, vehicle_regno, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, sales_amount)
-		  values (:batch_no, :cleaning_service, :carpet_size, :carpet_colour, :vehicle_make, :vehicle_model, :vehicle_regno, :interior_cleaning, :exterior_cleaning, :engine_cleaning, :undercarriage_cleaning, :sales_amount)",
+		  values (:batch_no, :cleaning_service, :carpet_size, :carpet_colour, :vehicle_make, :vehicle_model, :vehicle_regno, :interior_cleaning, :exterior_cleaning, :engine_cleaning, :undercarriage_cleaning, :sales_amount);",
 		sales_data.iter().map(|s| params! {
 			"batch_no" => s.batch_no,
 			"cleaning_service" => &s.cleaning_service,
@@ -1781,15 +1431,13 @@ fn select_incoming_sales_batch_data_requests(
 	
 	//let selected_data: Vec<SalesBatchDataTable> = conn
     conn.query_map(
-        "select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests order by batch_no asc limit 10",
+        "select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests order by batch_no desc limit 10;",
         |(batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode)| {
             let a = SalesBatchDataTable { batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode };
 			sales_batch_data.push(a);
         },
     )
 	.and_then(|_| Ok(1));
-	
-	//selected_data
 	
 	let mut vec_history_sales_batch_data = Vec::new();
 	let k: i32 = 0;
@@ -1838,45 +1486,69 @@ fn select_incoming_sales_batch_data_requests_old(
 fn select_incoming_search_sales_batch_data_requests(search_data: &String,
     is_mobile_no: &bool, is_customer_name: &bool, is_vehicle_regno: &bool, conn: &mut PooledConn) -> std::result::Result<Vec<HistorySalesBatchData>, mysql::error::Error> {
 	let mut sales_batch_data = Vec::new();
-	
-	/*
-	//let selected_data: Vec<SalesBatchDataTable> = conn
-    conn.query_map(
-        "select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests order by batch_no asc limit 10",
-        |(batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode)| {
-            let a = SalesBatchDataTable { batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode };
-			sales_batch_data.push(a);
-        },
-    )
-	.and_then(|_| Ok(1));
-	*/
 
 	//println!("search_data is {:?}", search_data);
+	//println!("is_mobile_no is {:?}", is_mobile_no);
+	//println!("is_vehicle_regno is {:?}", is_regno);
 	
-	conn.exec_map(
-    "select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests where cust_name = :search_data",
-	params! {
-            "search_data" => search_data,
-        },
-    |(batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode)| { 
-	  let a = 
-      SalesBatchDataTable {
-            batch_no: batch_no,
-            cust_name: cust_name,
-            mobile_no: mobile_no,
-            cleaning_service: cleaning_service,
-            sales_amount: sales_amount,
-			paid_amount: paid_amount,
-			payment_mode: payment_mode,
-        };
-		sales_batch_data.push(a);
-		},
-	)
-	.and_then(|_| Ok(1));
+	//(*) is the dereferencing operator
+	//We use it to get the actual value at the address of variable is_vehicle_regno
+	let is_regno = *is_vehicle_regno;
+	
+	if !is_regno {
+		conn.exec_map(
+		//"select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests where cust_name = :search_data",
+		"select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests where (case when :is_mobile_no = 1 then mobile_no = :search_data else cust_name = :search_data end) order by batch_no desc limit 10;",
+		params! {
+				"search_data" => search_data,
+				"is_mobile_no" => is_mobile_no,
+				//"is_customer_name" => is_customer_name,
+				//"is_vehicle_regno" => is_vehicle_regno,
+			},
+		|(batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode)| { 
+		  let a = 
+		  SalesBatchDataTable {
+				batch_no: batch_no,
+				cust_name: cust_name,
+				mobile_no: mobile_no,
+				cleaning_service: cleaning_service,
+				sales_amount: sales_amount,
+				paid_amount: paid_amount,
+				payment_mode: payment_mode,
+			};
+			sales_batch_data.push(a);
+			},
+		)
+		.and_then(|_| Ok(1));
+	}
+	else{
+		//let cleaning_service: String = String::from("vehicle");
+		
+		conn.exec_map(
+		//"select a.batch_no, a.cust_name, a.mobile_no, a.cleaning_service, a.sales_amount, a.paid_amount, a.payment_mode from incomingsalesbatchdatarequests a inner join incomingsalesdatarequests b on a.batch_no = b.batch_no where b.vehicle_regno = :search_data and b.cleaning_service = :cleaning_service order by a.batch_no asc limit 10;",
+		"select a.batch_no, a.cust_name, a.mobile_no, a.cleaning_service, a.sales_amount, a.paid_amount, a.payment_mode from incomingsalesbatchdatarequests a inner join incomingsalesdatarequests b on a.batch_no = b.batch_no where b.vehicle_regno = :search_data order by a.batch_no asc limit 10;",
+		params! {
+				"search_data" => search_data,
+				//"cleaning_service" => cleaning_service,
+			},
+		|(batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode)| { 
+		  let a = 
+		  SalesBatchDataTable {
+				batch_no: batch_no,
+				cust_name: cust_name,
+				mobile_no: mobile_no,
+				cleaning_service: cleaning_service,
+				sales_amount: sales_amount,
+				paid_amount: paid_amount,
+				payment_mode: payment_mode,
+			};
+			sales_batch_data.push(a);
+			},
+		)
+		.and_then(|_| Ok(1));
+	}
 	
 	//println!("sales_batch_data len is {:?}", sales_batch_data.len());
-	
-	//selected_data
 	
 	let mut vec_history_sales_batch_data = Vec::new();
 	let k: i32 = 0;
@@ -1886,13 +1558,28 @@ fn select_incoming_search_sales_batch_data_requests(search_data: &String,
 		let mobile_no = sales_data.mobile_no.to_string();
 		
 		let batch_no = sales_data.batch_no.as_ref().unwrap_or(&k);
-		
+		/*
 		let customer_sales_data = HistoryCustomerSalesData { cust_name: cust_name, mobile_no: mobile_no };
 		let carpet_sales_data = select_incoming_carpet_sales_data_requests(conn, batch_no);
 		let vehicle_sales_data = select_incoming_vehicle_sales_data_requests(conn, batch_no);
 		
 		let history_sales_response_data = HistorySalesResponseData {customer_sales_data: customer_sales_data, carpet_sales_data: carpet_sales_data, vehicle_sales_data: vehicle_sales_data };
-				
+		*/
+		let customer_sales_data = HistoryCustomerSalesData { cust_name: cust_name, mobile_no: mobile_no };
+		
+		let carpet_sales_data =
+		if is_regno {
+			//if client searched for vehicle, don't show carpet data
+			Vec::new()
+		}
+		else {
+			select_incoming_carpet_sales_data_requests(conn, batch_no)
+		};
+		
+		let vehicle_sales_data = select_incoming_vehicle_sales_data_requests(conn, batch_no);
+		
+		let history_sales_response_data = HistorySalesResponseData {customer_sales_data: customer_sales_data, carpet_sales_data: carpet_sales_data, vehicle_sales_data: vehicle_sales_data };
+		
 		let history_sales_batch_data = HistorySalesBatchData {batch_no: batch_no.to_string(), sales_data: history_sales_response_data };
 		
 		
@@ -1914,7 +1601,7 @@ fn select_incoming_carpet_sales_data_requests(
 	//println!("batch_no is {:?}", batch_no);
 	
     conn.exec_map(
-    "select carpet_size, carpet_colour, sales_amount, date_format(transaction_date, '%d-%m-%Y') transaction_date from incomingsalesdatarequests where batch_no = :batch_no and cleaning_service = :cleaning_service",
+    "select carpet_size, carpet_colour, sales_amount, date_format(transaction_date, '%d-%m-%Y') transaction_date from incomingsalesdatarequests where batch_no = :batch_no and cleaning_service = :cleaning_service;",
 	params! {
             "batch_no" => batch_no,
             "cleaning_service" => cleaning_service,
@@ -1974,7 +1661,7 @@ fn select_incoming_vehicle_sales_data_requests(
 	//println!("batch_no is {:?}", batch_no);
 	
     conn.exec_map(
-    "select vehicle_make, vehicle_model, vehicle_regno, sales_amount, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, date_format(transaction_date, '%d-%m-%Y') transaction_date from incomingsalesdatarequests where batch_no = :batch_no and cleaning_service = :cleaning_service",
+    "select vehicle_make, vehicle_model, vehicle_regno, sales_amount, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, date_format(transaction_date, '%d-%m-%Y') transaction_date from incomingsalesdatarequests where batch_no = :batch_no and cleaning_service = :cleaning_service;",
 	params! {
             "batch_no" => batch_no,
             "cleaning_service" => cleaning_service,
@@ -2043,7 +1730,7 @@ fn get_sales_batch_data(sales_batch_data: &Vec<SalesData>) -> SalesBatchDataTabl
 	let mut sales_amount_v = String::from("");
 	//let mut carpet_size = String::from("");
 	let mut sales_amount_c = String::from("");
-	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false };
 	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
 	
 	for sales_data in sales_batch_data.iter() {
@@ -2088,7 +1775,11 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 	let mut sales_amount_c = String::from("");
 	let mut carpet_size = String::from("");
 	let mut carpet_colour = String::from("");
-	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let mut interior_cleaning: bool = false;
+	let mut exterior_cleaning: bool = false;
+	let mut engine_cleaning: bool = false;
+	let mut undercarriage_cleaning: bool = false;
+	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false };
 	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
 	let mut is_valid_vehicle_data: bool = false;
 	let mut is_valid_carpet_data: bool = false;
@@ -2096,6 +1787,11 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 	for sales_data in sales_batch_data.iter() {
 		is_valid_vehicle_data = false;
 		is_valid_carpet_data = false;
+		
+		interior_cleaning = false;
+		exterior_cleaning = false;
+		engine_cleaning = false;
+		undercarriage_cleaning = false;
 		
 		vehicle_make = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make.to_string();
 		vehicle_model = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_model.to_string();
@@ -2105,7 +1801,10 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 		carpet_colour = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_colour.to_string();
 		sales_amount_c = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount.to_string();
 		
-		//let c1 = &String::from("risper muite").to_lowercase();
+		interior_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).interior_cleaning;
+		exterior_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).exterior_cleaning;
+		engine_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).engine_cleaning;
+		undercarriage_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).undercarriage_cleaning;
 		
 		let vehicle_amount = 
 		match sales_amount_v.parse::<i32>() {
@@ -2139,7 +1838,7 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 		if is_valid_vehicle_data {
 			//Assign values to struct variable
 			let sales_data_2 = SalesDataTable { batch_no: batch_no, cleaning_service: String::from("vehicle"), carpet_size: String::from(""), carpet_colour: String::from(""), 
-			  vehicle_make: vehicle_make, vehicle_model: vehicle_model, vehicle_regno: vehicle_regno, interior_cleaning: true, exterior_cleaning: false, engine_cleaning: true, undercarriage_cleaning: false,
+			  vehicle_make: vehicle_make, vehicle_model: vehicle_model, vehicle_regno: vehicle_regno, interior_cleaning: interior_cleaning, exterior_cleaning: exterior_cleaning, engine_cleaning: engine_cleaning, undercarriage_cleaning: undercarriage_cleaning,
 			  sales_amount: vehicle_amount };
 			  
 			  sales_data_table.push(sales_data_2);
