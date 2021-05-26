@@ -715,31 +715,31 @@ async fn get_carpet_type_colour_data(carpet_type_colour_data: web::Json<CarpetTy
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -748,40 +748,40 @@ async fn get_carpet_type_colour_data(carpet_type_colour_data: web::Json<CarpetTy
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	println!("channel_type - {:?}", channel_type);
+	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &carpet_type_colour_data.mobile_no.as_ref().unwrap_or(&k);
 	let carpet_type_colour = String::from("CARPET COLOUR|WHITE|BLACK|RED|BLUE|YELLOW|ORANGE|PURPLE|GREEN|MIXTURE");
-	
+	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
 	let b = format!("{}{}", String::from("carpet_type_colour - "), carpet_type_colour);
 	let c = format!("{}{}{}{}", a, x, b, x);
 	println!("details is {:?}", c);
-	
+	*/
 	let response_data = CarpetTypeColourResponseData {message_data: carpet_type_colour.to_string(), status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful") };
 	web::Json(response_data)
 }
@@ -804,31 +804,31 @@ async fn get_vehicle_cleaning_type_cost_data(vehicle_cleaning_type_cost_data: we
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -837,31 +837,31 @@ async fn get_vehicle_cleaning_type_cost_data(vehicle_cleaning_type_cost_data: we
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	println!("channel_type - {:?}", channel_type);
+	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &vehicle_cleaning_type_cost_data.mobile_no.as_ref().unwrap_or(&k);
 	let mut k = Vec::new();
 	let interior_cleaning_name = String::from("interior");
@@ -882,13 +882,13 @@ async fn get_vehicle_cleaning_type_cost_data(vehicle_cleaning_type_cost_data: we
 	k.push(engine_item);
 	let under_carriage_item = VehicleCleaningTypeCostDetails { cleaning_type_name: under_carriage_cleaning_name, amount: under_carriage_cleaning_cost };
 	k.push(under_carriage_item);
-	
+	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
 	let b = format!("{}{}", String::from("vehicle_cleaning_type_cost - "), k.len().to_string());
 	let c = format!("{}{}{}{}", a, x, b, x);
 	println!("details is {:?}", c);
-	
+	*/
 	let response_data = VehicleCleaningTypeCostResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
 	web::Json(response_data)
 }
@@ -911,31 +911,31 @@ async fn get_carpet_cleaning_type_cost_data(carpet_cleaning_type_cost_data: web:
 		if req.headers().contains_key("authorization") {
 			let m = req.headers().get("authorization").unwrap();
 			authorization = m.to_str().unwrap().to_string();
-			println!("m authorization - {:?}", m);
+			//println!("m authorization - {:?}", m);
 			if !authorization.is_empty() {
 				if authorization.to_lowercase().contains("bearer") {
-					println!("bearer found");
+					//println!("bearer found");
 					let v: Vec<&str> = authorization.split(' ').collect();
-					println!("v - {:?}", v);
+					//println!("v - {:?}", v);
 					let s = v.len();
 					if s == 2 {
 						auth_token = String::from(v[1]);
-						println!("auth_token - {:?}", auth_token);
+						//println!("auth_token - {:?}", auth_token);
 						let bytes = decode(auth_token).unwrap();
 						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						println!("auth_token bytes 2 - {:?}", m_auth_token);
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
 						if !m_auth_token.is_empty() {
 							if m_auth_token.contains(":") {
 								let w: Vec<&str> = m_auth_token.split(':').collect();
-								println!("w - {:?}", w);
+								//println!("w - {:?}", w);
 								let t = w.len();
 								if t == 2 {
 									user_name = String::from(w[0]);
 									pass_word = String::from(w[1]);
 								}
 							}
-							println!("user_name - {:?}", user_name);
-							println!("pass_word - {:?}", pass_word);
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
 						}
 					}
 				}
@@ -944,31 +944,31 @@ async fn get_carpet_cleaning_type_cost_data(carpet_cleaning_type_cost_data: web:
 		if req.headers().contains_key("channeltype") {
 			let m = req.headers().get("channeltype").unwrap();
 			channel_type = m.to_str().unwrap().to_string();
-			println!("m channel_type - {:?}", m);
+			//println!("m channel_type - {:?}", m);
 		}
 		if req.headers().contains_key("appvercode") {
 			let m = req.headers().get("appvercode").unwrap();
 			app_ver_code = m.to_str().unwrap().to_string();
-			println!("m app_ver_code - {:?}", m);
+			//println!("m app_ver_code - {:?}", m);
 		}
 		if req.headers().contains_key("appidtok") {
 			let m = req.headers().get("appidtok").unwrap();
 			app_id_tok = m.to_str().unwrap().to_string();
-			println!("m app_id_tok - {:?}", m);
+			//println!("m app_id_tok - {:?}", m);
 		}
 		if req.headers().contains_key("devid") {
 			let m = req.headers().get("devid").unwrap();
 			dev_id = m.to_str().unwrap().to_string();
-			println!("m dev_id - {:?}", m);
+			//println!("m dev_id - {:?}", m);
 		}
 		if req.headers().contains_key("devtokregno") {
 			let m = req.headers().get("devtokregno").unwrap();
 			dev_tok_regno = m.to_str().unwrap().to_string();
-			println!("m dev_tok_regno - {:?}", m);
+			//println!("m dev_tok_regno - {:?}", m);
 		}
 	}
 	
-	println!("channel_type - {:?}", channel_type);
+	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &carpet_cleaning_type_cost_data.mobile_no.as_ref().unwrap_or(&k);
 	let mut k = Vec::new();
 	let a_cleaning_size_name = String::from("5by8");
@@ -989,13 +989,13 @@ async fn get_carpet_cleaning_type_cost_data(carpet_cleaning_type_cost_data: web:
 	k.push(c_item);
 	let d_item = CarpetCleaningTypeCostDetails { cleaning_size_name: d_size_cleaning_name, amount: d_cleaning_size_cost };
 	k.push(d_item);
-	
+	/*
 	let x = String::from(" ");
 	let a = format!("{}{}", String::from("mobile_no - "), mobile_no);
 	let b = format!("{}{}", String::from("carpet_cleaning_type_cost - "), k.len().to_string());
 	let c = format!("{}{}{}{}", a, x, b, x);
 	println!("details is {:?}", c);
-	
+	*/
 	let response_data = CarpetCleaningTypeCostResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), cost_data: k };
 	web::Json(response_data)
 }
