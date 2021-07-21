@@ -122,6 +122,12 @@ struct SearchHistorySalesData {
 	search_by: SearchSalesItems,
 }
 
+#[derive(Deserialize)]
+struct EmployeesData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
 enum ProcessingStatus {
 	Zero,
 	One,
@@ -261,6 +267,19 @@ struct HistorySalesBatchResponseData {
     status_code: u32,
 	status_description: String,
 	sales_batch_data: Vec<HistorySalesBatchData>,
+}
+
+#[derive(Serialize)]
+struct EmployeeRegisteredDetails {
+    full_names: String,
+	id: u32,
+}
+
+#[derive(Serialize)]
+struct EmployeesRegisteredResponseData {
+    status_code: u32,
+	status_description: String,
+	employees_data: Vec<EmployeeRegisteredDetails>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -1262,6 +1281,85 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 	web::Json(response_data)
 }
 
+/// deserialize `EmployeesData` from request's body
+#[post("/getallemployeesdata")]
+async fn get_all_employees_data(employees_data: web::Json<EmployeesData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			//println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					//println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					//println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						//println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								//println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			//println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			//println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			//println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			//println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			//println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	let response_data = get_employees_registered_data(&data);
+	web::Json(response_data)
+}
+
 fn get_carpet_sales_data_1() -> HistoryCarpetSalesData {
 	let carpet_size: String = String::from("6 by 9");
 	let carpet_colour: String = String::from("PURPLE");
@@ -1323,6 +1421,7 @@ fn get_customer_sales_data_2() -> HistoryCustomerSalesData {
 
 fn get_conn_url() -> String {
 	let url = "mysql://ussd:arunga@2030!@localhost:3306/carwash_n_spa";
+	//let url = "mysql://app1:23$)W.@9smtf!qp7@localhost:3306/carwash_n_spa"; cloud server
 	String::from(url)
 }
 
@@ -1766,6 +1865,23 @@ fn get_sales_batch_data(sales_batch_data: &Vec<SalesData>) -> SalesBatchDataTabl
 	sales_batch_data_table
 }
 
+fn select_employees_registered_details_requests(
+    conn: &mut PooledConn) -> std::result::Result<Vec<EmployeeRegisteredDetails>, mysql::error::Error> {
+	let mut employees_registered_data = Vec::new();
+	
+    conn.query_map(
+        "select id,full_names from employeesregistereddetails where employee_type_code = 1 and activated = 1 and duplicate_entry = 0 and deleted = 0 order by full_names asc;",
+        |(id, full_names)| {
+            let a = EmployeeRegisteredDetails { id, full_names };
+			employees_registered_data.push(a);
+        },
+    )
+	.and_then(|_| Ok(1));
+	
+	Ok(employees_registered_data)
+	
+}
+
 fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<SalesDataTable>  {
 	let mut sales_data_table = Vec::new();
 	let mut vehicle_make = String::from("");
@@ -1922,6 +2038,25 @@ fn get_history_search_sales_batch_data(search_data: &String,
 	
 	output_data
 }
+
+fn get_employees_registered_data(data: &web::Data<Pool>) -> EmployeesRegisteredResponseData  {
+	let mut vec_employees_registered_data = Vec::new();
+	
+	match data
+        .get_conn()
+		.and_then(|mut conn| select_employees_registered_details_requests(&mut conn))
+    {
+        Ok(s) => {
+			vec_employees_registered_data = s;
+        },
+        Err(e) => println!("Failed to open DB connection. {:?}", e),
+    }
+	
+	//Assign values to struct variable
+	let output_data = EmployeesRegisteredResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), employees_data: vec_employees_registered_data };
+	
+	output_data
+}
 /*
 fn get_database_connection(data: web::Data<Pool>) -> &'static mut PooledConn {
 	
@@ -2000,6 +2135,7 @@ async fn main() {
 			.service(add_sales_data)
 			.service(get_all_sales_data)
 			.service(get_search_sales_data)
+			.service(get_all_employees_data)
             .route("/", web::get().to(greet))
             .route("/{name}", web::get().to(greet))
     }).bind("0.0.0.0:9247") {
@@ -2009,7 +2145,7 @@ async fn main() {
             return;
         }
     };
- 
+	//println!("[info] ActixWebHttpServer - Listening for HTTP on /0:0:0:0:0:0:0:0:9247")
     match server.run().await {
         Ok(_) => println!("Server exited normally."),
         Err(e) => println!("Server exited with error: {:?}", e),
