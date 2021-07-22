@@ -1035,6 +1035,8 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	let mut auth_token = String::from("");
 	let mut user_name = String::from("");
 	let mut pass_word = String::from("");
+	let employee_id: i32 = 4;
+	let employee_full_names: String = String::from("Aisha Nasri Juma");
 	
 	if !req.headers().is_empty() {
 		if req.headers().contains_key("authorization") {
@@ -1106,7 +1108,8 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	let batch_no: i32 = create_sales_batch_data(&data, sales_batch_data_table);
 	
 	let sales_data_table = get_sales_data(sales_batch_data, batch_no);
-	let successful: bool = create_sales_data(data, batch_no, sales_data_table);
+	let successful: bool = create_sales_data(&data, sales_data_table);
+	let successful_1: bool = create_sales_commission_data(data, batch_no, employee_id, employee_full_names);
 	
 	let response_data = ResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful")};
 	web::Json(response_data)
@@ -1443,12 +1446,12 @@ fn create_sales_batch_data(data: &web::Data<Pool>, sales_batch_data: SalesBatchD
 	batch_no
 }
 
-fn create_sales_data(data: web::Data<Pool>, batch_no: i32, sales_data: Vec<SalesDataTable>) -> bool {
+fn create_sales_data(data: &web::Data<Pool>, sales_data: Vec<SalesDataTable>) -> bool {
 	let mut successful: bool = false;
 	
 	match data
         .get_conn()
-		.and_then(|mut conn| insert_sales_data(&mut conn, batch_no, sales_data))
+		.and_then(|mut conn| insert_sales_data(&mut conn, sales_data))
     {
         Ok(sales_no) => {
             //println!("Successful to open DB connection."),
@@ -1499,7 +1502,7 @@ fn insert_sales_batch_data(
 }
 
 fn insert_sales_data(
-    conn: &mut PooledConn, batch_no: i32, sales_data: Vec<SalesDataTable>) -> std::result::Result<u64, mysql::error::Error> {
+    conn: &mut PooledConn, sales_data: Vec<SalesDataTable>) -> std::result::Result<u64, mysql::error::Error> {
 	
 	// Now let's insert sales data to the database
 	conn.exec_batch(
@@ -1522,6 +1525,39 @@ fn insert_sales_data(
 	)
 	.and_then(|_| Ok(1))
 	
+}
+
+fn insert_sales_commission_data(
+    conn: &mut PooledConn, batch_no: i32, employee_id: i32, employee_full_names: String) -> std::result::Result<u64, mysql::error::Error> {
+	
+	//let mut batch_no: i32 = 0;
+	
+	// Now let's insert sales commission data to the database
+	conn.exec_drop(
+        "call insertsalescommissiondetails (:mybatch_no, :myemployee_id, :myemployee_full_names);",
+        params! {
+            "mybatch_no" => batch_no,
+            "myemployee_id" => employee_id,
+            "myemployee_full_names" => employee_full_names,
+        },
+    )
+	.and_then(|_| Ok(1))
+}
+
+fn create_sales_commission_data(data: web::Data<Pool>, batch_no: i32, employee_id: i32, employee_full_names: String) -> bool {
+	let mut successful: bool = false;
+	
+	match data
+        .get_conn()
+		.and_then(|mut conn| insert_sales_commission_data(&mut conn, batch_no, employee_id, employee_full_names))
+    {
+        Ok(sales_no) => {
+			successful = true;
+        },
+        Err(e) => println!("Failed to open DB connection. {:?}", e),
+    }
+	
+	successful
 }
 
 fn select_incoming_sales_batch_data_requests(
