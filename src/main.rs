@@ -57,6 +57,8 @@ struct VehicleSalesData {
 	exterior_cleaning: bool,
 	engine_cleaning: bool,
 	undercarriage_cleaning: bool,
+	employee_id: i32,
+	employee_full_names: String,
 }
 
 #[derive(Deserialize)]
@@ -65,6 +67,8 @@ struct CarpetSalesData {
 	carpet_colour: String,
 	sales_amount: String,
 	payment_mode: String,
+	employee_id: i32,
+	employee_full_names: String,
 }
 
 #[derive(Deserialize)]
@@ -307,6 +311,8 @@ struct SalesDataTable {
     engine_cleaning: bool,
     undercarriage_cleaning: bool,
     sales_amount: i32,
+	employee_id: i32,
+	employee_full_names: String,
 }
 /*	
 let url = get_conn_url();
@@ -1035,8 +1041,6 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	let mut auth_token = String::from("");
 	let mut user_name = String::from("");
 	let mut pass_word = String::from("");
-	let employee_id: i32 = 4;
-	let employee_full_names: String = String::from("Aisha Nasri Juma");
 	
 	if !req.headers().is_empty() {
 		if req.headers().contains_key("authorization") {
@@ -1109,7 +1113,8 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	
 	let sales_data_table = get_sales_data(sales_batch_data, batch_no);
 	let successful: bool = create_sales_data(&data, sales_data_table);
-	let successful_1: bool = create_sales_commission_data(data, batch_no, employee_id, employee_full_names);
+	//let successful_1: bool = create_sales_commission_data(data, batch_no, employee_id, employee_full_names);
+	let successful_1: bool = create_sales_commission_data(data, batch_no);
 	
 	let response_data = ResponseData { status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful")};
 	web::Json(response_data)
@@ -1506,8 +1511,8 @@ fn insert_sales_data(
 	
 	// Now let's insert sales data to the database
 	conn.exec_batch(
-		r"insert into incomingsalesdatarequests (batch_no, cleaning_service, carpet_size, carpet_colour, vehicle_make, vehicle_model, vehicle_regno, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, sales_amount)
-		  values (:batch_no, :cleaning_service, :carpet_size, :carpet_colour, :vehicle_make, :vehicle_model, :vehicle_regno, :interior_cleaning, :exterior_cleaning, :engine_cleaning, :undercarriage_cleaning, :sales_amount);",
+		r"insert into incomingsalesdatarequests (batch_no, cleaning_service, carpet_size, carpet_colour, vehicle_make, vehicle_model, vehicle_regno, interior_cleaning, exterior_cleaning, engine_cleaning, undercarriage_cleaning, sales_amount, employee_id, employee_full_names)
+		  values (:batch_no, :cleaning_service, :carpet_size, :carpet_colour, :vehicle_make, :vehicle_model, :vehicle_regno, :interior_cleaning, :exterior_cleaning, :engine_cleaning, :undercarriage_cleaning, :sales_amount, :employee_id, :employee_full_names);",
 		sales_data.iter().map(|s| params! {
 			"batch_no" => s.batch_no,
 			"cleaning_service" => &s.cleaning_service,
@@ -1521,6 +1526,8 @@ fn insert_sales_data(
 			"engine_cleaning" => s.engine_cleaning,
 			"undercarriage_cleaning" => s.undercarriage_cleaning,
 			"sales_amount" => s.sales_amount,
+			"employee_id" => s.employee_id,
+			"employee_full_names" => &s.employee_full_names,
 		})
 	)
 	.and_then(|_| Ok(1))
@@ -1528,28 +1535,30 @@ fn insert_sales_data(
 }
 
 fn insert_sales_commission_data(
-    conn: &mut PooledConn, batch_no: i32, employee_id: i32, employee_full_names: String) -> std::result::Result<u64, mysql::error::Error> {
+    conn: &mut PooledConn, batch_no: i32) -> std::result::Result<u64, mysql::error::Error> {
 	
 	//let mut batch_no: i32 = 0;
+	//employee_id: i32, employee_full_names: String
 	
 	// Now let's insert sales commission data to the database
+	//"call insertsalescommissiondetails (:mybatch_no, :myemployee_id, :myemployee_full_names);",
 	conn.exec_drop(
-        "call insertsalescommissiondetails (:mybatch_no, :myemployee_id, :myemployee_full_names);",
+        "call insertsalescommissiondetails (:mybatch_no);",
         params! {
             "mybatch_no" => batch_no,
-            "myemployee_id" => employee_id,
-            "myemployee_full_names" => employee_full_names,
+            //"myemployee_id" => employee_id,
+            //"myemployee_full_names" => employee_full_names,
         },
     )
 	.and_then(|_| Ok(1))
 }
 
-fn create_sales_commission_data(data: web::Data<Pool>, batch_no: i32, employee_id: i32, employee_full_names: String) -> bool {
+fn create_sales_commission_data(data: web::Data<Pool>, batch_no: i32) -> bool {
 	let mut successful: bool = false;
 	
 	match data
         .get_conn()
-		.and_then(|mut conn| insert_sales_commission_data(&mut conn, batch_no, employee_id, employee_full_names))
+		.and_then(|mut conn| insert_sales_commission_data(&mut conn, batch_no))
     {
         Ok(sales_no) => {
 			successful = true;
@@ -1865,8 +1874,8 @@ fn get_sales_batch_data(sales_batch_data: &Vec<SalesData>) -> SalesBatchDataTabl
 	let mut sales_amount_v = String::from("");
 	//let mut carpet_size = String::from("");
 	let mut sales_amount_c = String::from("");
-	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false };
-	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false, employee_id: 0, employee_full_names: String::from("") };
+	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), employee_id: 0, employee_full_names: String::from("") };
 	
 	for sales_data in sales_batch_data.iter() {
 		//cust_name = sales_data.customer_sales_data.cust_name;
@@ -1931,8 +1940,12 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 	let mut exterior_cleaning: bool = false;
 	let mut engine_cleaning: bool = false;
 	let mut undercarriage_cleaning: bool = false;
-	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false };
-	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from("")};
+	let mut employee_id_vehicle: i32 = 0;
+	let mut employee_full_names_vehicle: String = String::from("");
+	let mut employee_id_carpet: i32 = 0;
+	let mut employee_full_names_carpet: String = String::from("");
+	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false, employee_id: 0, employee_full_names: String::from("") };
+	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), employee_id: 0, employee_full_names: String::from("") };
 	let mut is_valid_vehicle_data: bool = false;
 	let mut is_valid_carpet_data: bool = false;
 	
@@ -1945,6 +1958,11 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 		engine_cleaning = false;
 		undercarriage_cleaning = false;
 		
+		employee_id_vehicle = 0;
+		employee_full_names_vehicle = String::from("");
+		employee_id_carpet = 0;
+		employee_full_names_carpet = String::from("");
+		
 		vehicle_make = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make.to_string();
 		vehicle_model = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_model.to_string();
 		vehicle_regno = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_regno.to_string();
@@ -1952,11 +1970,15 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 		carpet_size = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size.to_string();
 		carpet_colour = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_colour.to_string();
 		sales_amount_c = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount.to_string();
+		employee_id_carpet = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).employee_id;
+		employee_full_names_carpet = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).employee_full_names.to_string();
 		
 		interior_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).interior_cleaning;
 		exterior_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).exterior_cleaning;
 		engine_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).engine_cleaning;
 		undercarriage_cleaning = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).undercarriage_cleaning;
+		employee_id_vehicle = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).employee_id;
+		employee_full_names_vehicle = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).employee_full_names.to_string();
 		
 		let vehicle_amount = 
 		match sales_amount_v.parse::<i32>() {
@@ -1982,7 +2004,7 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 			//Assign values to struct variable
 			let sales_data_1 = SalesDataTable { batch_no: batch_no, cleaning_service: String::from("carpet"), carpet_size: carpet_size, carpet_colour: carpet_colour, 
 			  vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false,
-			  sales_amount: carpet_amount };
+			  sales_amount: carpet_amount, employee_id: employee_id_carpet, employee_full_names: employee_full_names_carpet };
 			  
 			  sales_data_table.push(sales_data_1);
 		}
@@ -1991,7 +2013,7 @@ fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<Sales
 			//Assign values to struct variable
 			let sales_data_2 = SalesDataTable { batch_no: batch_no, cleaning_service: String::from("vehicle"), carpet_size: String::from(""), carpet_colour: String::from(""), 
 			  vehicle_make: vehicle_make, vehicle_model: vehicle_model, vehicle_regno: vehicle_regno, interior_cleaning: interior_cleaning, exterior_cleaning: exterior_cleaning, engine_cleaning: engine_cleaning, undercarriage_cleaning: undercarriage_cleaning,
-			  sales_amount: vehicle_amount };
+			  sales_amount: vehicle_amount, employee_id: employee_id_vehicle, employee_full_names: employee_full_names_vehicle };
 			  
 			  sales_data_table.push(sales_data_2);
 		}
