@@ -43,7 +43,9 @@ struct SalesData {
 struct CustomerSalesData {
     cust_name: String,
 	mobile_no: String,
-	cleaning_service: String,
+	sales_amount: String,
+	paid_amount: String,
+	payment_mode: String,
 }
 
 #[derive(Deserialize)]
@@ -128,6 +130,12 @@ struct SearchHistorySalesData {
 
 #[derive(Deserialize)]
 struct EmployeesData {
+    mobile_no: Option<String>,
+	device_registration_token: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SalesCommissionData {
     mobile_no: Option<String>,
 	device_registration_token: Option<String>,
 }
@@ -284,6 +292,25 @@ struct EmployeesRegisteredResponseData {
     status_code: u32,
 	status_description: String,
 	employees_data: Vec<EmployeeRegisteredDetails>,
+}
+
+#[derive(Serialize)]
+struct SalesCommissionDetails {
+	batch_no: u32,
+    cleaning_service: String,
+	cleaning_service_type: String,
+	cleaning_amount: i32,
+	commission_percentage: i32,
+	commission_amount: i32,
+	employee_full_names: String,
+	transaction_date: String,
+}
+
+#[derive(Serialize)]
+struct SalesCommissionResponseData {
+    status_code: u32,
+	status_description: String,
+	sales_commission_data: Vec<SalesCommissionDetails>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -1368,6 +1395,85 @@ async fn get_all_employees_data(employees_data: web::Json<EmployeesData>, req: H
 	web::Json(response_data)
 }
 
+/// deserialize `SalesCommissionData` from request's body
+#[post("/getallsalescommissiondata")]
+async fn get_all_sales_commission_data(sales_commission_data: web::Json<SalesCommissionData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	
+	if !req.headers().is_empty() {
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			//println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					//println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					//println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						//println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								//println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			//println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			//println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			//println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			//println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			//println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	let response_data = get_sales_commission_data(&data);
+	web::Json(response_data)
+}
+
 fn get_carpet_sales_data_1() -> HistoryCarpetSalesData {
 	let carpet_size: String = String::from("6 by 9");
 	let carpet_colour: String = String::from("PURPLE");
@@ -1867,24 +1973,22 @@ fn get_sales_batch_data(sales_batch_data: &Vec<SalesData>) -> SalesBatchDataTabl
 	let mut cust_name = String::from("");
 	let mut mobile_no = String::from("");
 	let mut sales_amount = 0;
-	let paid_amount = 0;
-	//let mut payment_mode = String::from("");
-	let payment_mode = String::from("mpesa");
-	//let mut vehicle_make = String::from("");
-	let mut sales_amount_v = String::from("");
-	//let mut carpet_size = String::from("");
-	let mut sales_amount_c = String::from("");
+	let mut paid_amount = 0;
+	let mut sales_amount_s = String::from("");
+	let mut paid_amount_s = String::from("");
+	let mut payment_mode = String::from("");
+	//let mut sales_amount_v = String::from("");
+	//let mut sales_amount_c = String::from("");
 	let vehicle_sales_data = VehicleSalesData { vehicle_make: String::from(""), vehicle_model: String::from(""), vehicle_regno: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), interior_cleaning: false, exterior_cleaning: false, engine_cleaning: false, undercarriage_cleaning: false, employee_id: 0, employee_full_names: String::from("") };
 	let carpet_sales_data = CarpetSalesData { carpet_size: String::from(""), carpet_colour: String::from(""), sales_amount: String::from(""), payment_mode: String::from(""), employee_id: 0, employee_full_names: String::from("") };
 	
 	for sales_data in sales_batch_data.iter() {
-		//cust_name = sales_data.customer_sales_data.cust_name;
 		cust_name = sales_data.customer_sales_data.cust_name.to_string();
 		mobile_no = sales_data.customer_sales_data.mobile_no.to_string();
-		//sales_amount = sales_data.customer_sales_data.sales_amount;
-		//paid_amount = sales_data.customer_sales_data.paid_amount;
-		//payment_mode = &sales_data.customer_sales_data.payment_mode;
-		//vehicle_make = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).vehicle_make.to_string();
+		payment_mode = sales_data.customer_sales_data.payment_mode.to_string();
+		sales_amount_s = sales_data.customer_sales_data.sales_amount.to_string();
+		paid_amount_s = sales_data.customer_sales_data.paid_amount.to_string();
+		/*
 		sales_amount_v = sales_data.vehicle_sales_data.as_ref().unwrap_or(&vehicle_sales_data).sales_amount.to_string();
 		//carpet_size = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).carpet_size.to_string();
 		sales_amount_c = sales_data.carpet_sales_data.as_ref().unwrap_or(&carpet_sales_data).sales_amount.to_string();
@@ -1902,8 +2006,20 @@ fn get_sales_batch_data(sales_batch_data: &Vec<SalesData>) -> SalesBatchDataTabl
 		};
 		
 		sales_amount = vehicle_amount + carpet_amount; //test only
+		*/
+		let sales_amount = 
+		match sales_amount_s.parse::<i32>() {
+		  Ok(a) => a,
+		  Err(e) => 0,
+		};
+		
+		let paid_amount = 
+		match paid_amount_s.parse::<i32>() {
+		  Ok(a) => a,
+		  Err(e) => 0,
+		};
 		//Assign values to struct variable
-		sales_batch_data_table = SalesBatchDataTable { batch_no: None, cust_name: cust_name, mobile_no: mobile_no, cleaning_service: String::from(""), sales_amount: sales_amount, paid_amount: paid_amount, payment_mode: payment_mode.to_string() };
+		sales_batch_data_table = SalesBatchDataTable { batch_no: None, cust_name: cust_name, mobile_no: mobile_no, cleaning_service: String::from(""), sales_amount: sales_amount, paid_amount: paid_amount, payment_mode: payment_mode };
 
 	}
 	
@@ -1924,6 +2040,23 @@ fn select_employees_registered_details_requests(
 	.and_then(|_| Ok(1));
 	
 	Ok(employees_registered_data)
+	
+}
+
+fn select_sales_commission_details_requests(
+    conn: &mut PooledConn) -> std::result::Result<Vec<SalesCommissionDetails>, mysql::error::Error> {
+	let mut sales_commission_data = Vec::new();
+	
+    conn.query_map(
+        "select batch_no, cleaning_service, cleaning_service_type, cleaning_amount, commission_percentage, commission_amount, employee_full_names, date_format(transaction_date, '%d-%m-%Y') transaction_date from salescommissiondata order by id asc;",
+        |(batch_no, cleaning_service, cleaning_service_type, cleaning_amount, commission_percentage, commission_amount, employee_full_names, transaction_date)| {
+            let a = SalesCommissionDetails { batch_no, cleaning_service, cleaning_service_type, cleaning_amount, commission_percentage, commission_amount, employee_full_names, transaction_date };
+			sales_commission_data.push(a);
+        },
+    )
+	.and_then(|_| Ok(1));
+	
+	Ok(sales_commission_data)
 	
 }
 
@@ -2115,6 +2248,25 @@ fn get_employees_registered_data(data: &web::Data<Pool>) -> EmployeesRegisteredR
 	
 	output_data
 }
+
+fn get_sales_commission_data(data: &web::Data<Pool>) -> SalesCommissionResponseData  {
+	let mut vec_sales_commission_data = Vec::new();
+	
+	match data
+        .get_conn()
+		.and_then(|mut conn| select_sales_commission_details_requests(&mut conn))
+    {
+        Ok(s) => {
+			vec_sales_commission_data = s;
+        },
+        Err(e) => println!("Failed to open DB connection. {:?}", e),
+    }
+	
+	//Assign values to struct variable
+	let output_data = SalesCommissionResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), sales_commission_data: vec_sales_commission_data };
+	
+	output_data
+}
 /*
 fn get_database_connection(data: web::Data<Pool>) -> &'static mut PooledConn {
 	
@@ -2194,6 +2346,7 @@ async fn main() {
 			.service(get_all_sales_data)
 			.service(get_search_sales_data)
 			.service(get_all_employees_data)
+			.service(get_all_sales_commission_data)
             .route("/", web::get().to(greet))
             .route("/{name}", web::get().to(greet))
     }).bind("0.0.0.0:9247") {
