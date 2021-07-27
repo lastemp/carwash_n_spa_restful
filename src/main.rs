@@ -9,11 +9,6 @@ use mysql::prelude::*;
 
 //, Result
 
-#[derive(Serialize)]
-struct Measurement {
-    temperature: f32,
-}
-
 #[derive(Deserialize)]
 struct Info {
     username: String,
@@ -140,10 +135,28 @@ struct SalesCommissionData {
 	device_registration_token: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct SearchSalesCommissionItems {
+    employee_id: Option<bool>,
+	employee_full_names: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct SearchSalesCommissionData {
+    search_data: Option<String>,
+	search_by: SearchSalesCommissionItems,
+}
+
 enum ProcessingStatus {
 	Zero,
 	One,
 	Two,
+}
+
+
+#[derive(Serialize)]
+struct Measurement {
+    temperature: f32,
 }
 
 #[derive(Serialize)]
@@ -341,6 +354,12 @@ struct SalesDataTable {
 	employee_id: i32,
 	employee_full_names: String,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+struct ClientApiResponseDetails {
+    status_code: u32,
+	status_description: String,
+}
 /*	
 let url = get_conn_url();
 
@@ -404,76 +423,11 @@ async fn greet(req: HttpRequest) -> impl Responder {
 #[post("/getvehiclemakedata")]
 async fn get_vehicle_make_data(vehicle_make_data: web::Json<VehicleMakeData>, req: HttpRequest) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_vehicle_make_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &vehicle_make_data.mobile_no.as_ref().unwrap_or(&k);
@@ -513,76 +467,11 @@ async fn get_vehicle_make_data(vehicle_make_data: web::Json<VehicleMakeData>, re
 #[post("/getvehiclemodeldata")]
 async fn get_vehicle_model_data(vehicle_model_data: web::Json<VehicleModelData>, req: HttpRequest) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_vehicle_model_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &vehicle_model_data.mobile_no.as_ref().unwrap_or(&k);
@@ -644,76 +533,11 @@ async fn get_vehicle_model_data(vehicle_model_data: web::Json<VehicleModelData>,
 #[post("/getcarpettypesizedata")]
 async fn get_carpet_type_size_data(carpet_type_size_data: web::Json<CarpetTypeSizeData>, req: HttpRequest) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_carpet_type_size_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &carpet_type_size_data.mobile_no.as_ref().unwrap_or(&k);
@@ -753,76 +577,11 @@ async fn get_carpet_type_size_data(carpet_type_size_data: web::Json<CarpetTypeSi
 #[post("/getcarpettypecolourdata")]
 async fn get_carpet_type_colour_data(carpet_type_colour_data: web::Json<CarpetTypeColourData>, req: HttpRequest) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_carpet_type_colour_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &carpet_type_colour_data.mobile_no.as_ref().unwrap_or(&k);
@@ -842,76 +601,11 @@ async fn get_carpet_type_colour_data(carpet_type_colour_data: web::Json<CarpetTy
 #[post("/getvehiclecleaningtypecostdata")]
 async fn get_vehicle_cleaning_type_cost_data(vehicle_cleaning_type_cost_data: web::Json<VehicleCleaningTypeCostData>, req: HttpRequest) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_vehicle_cleaning_type_cost_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &vehicle_cleaning_type_cost_data.mobile_no.as_ref().unwrap_or(&k);
@@ -949,76 +643,11 @@ async fn get_vehicle_cleaning_type_cost_data(vehicle_cleaning_type_cost_data: we
 #[post("/getcarpetcleaningtypecostdata")]
 async fn get_carpet_cleaning_type_cost_data(carpet_cleaning_type_cost_data: web::Json<CarpetCleaningTypeCostData>, req: HttpRequest) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_carpet_cleaning_type_cost_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	//println!("channel_type - {:?}", channel_type);
 	let mobile_no = &carpet_cleaning_type_cost_data.mobile_no.as_ref().unwrap_or(&k);
@@ -1056,79 +685,11 @@ async fn get_carpet_cleaning_type_cost_data(carpet_cleaning_type_cost_data: web:
 #[post("/addsalesdata")]
 async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	//let channel_type = HeaderName::from_lowercase(b"channeltype").unwrap_or(&k);
-	//let channel_type = HeaderValue::from_str("ChannelType").unwrap();
-	//let channel_type = req.headers().get("ChannelType");
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("add_sales_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	//println!("channel_type - {:?}", channel_type);
 	let batch_no = &sales_batch_data.batch_no.as_ref().unwrap_or(&k);
@@ -1151,79 +712,11 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 #[post("/getallsalesdata")]
 async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_all_sales_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
-	
-	//println!("channel_type - {:?}", channel_type);
-	//let mobile_no = &history_sales_data.mobile_no.as_ref().unwrap_or(&k);
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	let response_data = get_history_sales_batch_data(&data);
 	web::Json(response_data)
@@ -1234,76 +727,11 @@ async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req
 async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistorySalesData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
 	let k = String::from(""); //Default value for string variables.
 	let j: bool = false;
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	let api_function = String::from("get_search_sales_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	let search_data = &search_history_sales_data.search_data.as_ref().unwrap_or(&k);
 	let search_by_key = &search_history_sales_data.search_by;
@@ -1319,77 +747,12 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 /// deserialize `EmployeesData` from request's body
 #[post("/getallemployeesdata")]
 async fn get_all_employees_data(employees_data: web::Json<EmployeesData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
-	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	//let k = String::from(""); //Default value for string variables.
+	let api_function = String::from("get_all_employees_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	let response_data = get_employees_registered_data(&data);
 	web::Json(response_data)
@@ -1398,79 +761,38 @@ async fn get_all_employees_data(employees_data: web::Json<EmployeesData>, req: H
 /// deserialize `SalesCommissionData` from request's body
 #[post("/getallsalescommissiondata")]
 async fn get_all_sales_commission_data(sales_commission_data: web::Json<SalesCommissionData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
-	let k = String::from(""); //Default value for string variables.
-	let mut authorization = String::from("");
-	let mut channel_type = String::from("");
-	let mut app_ver_code = String::from("");
-	let mut app_id_tok = String::from("");
-	let mut dev_id = String::from("");
-	let mut dev_tok_regno = String::from("");
-	let mut auth_token = String::from("");
-	let mut user_name = String::from("");
-	let mut pass_word = String::from("");
+	//let k = String::from(""); //Default value for string variables.
+	let api_function = String::from("get_all_sales_commission_data"); 
 	
-	if !req.headers().is_empty() {
-		if req.headers().contains_key("authorization") {
-			let m = req.headers().get("authorization").unwrap();
-			authorization = m.to_str().unwrap().to_string();
-			//println!("m authorization - {:?}", m);
-			if !authorization.is_empty() {
-				if authorization.to_lowercase().contains("bearer") {
-					//println!("bearer found");
-					let v: Vec<&str> = authorization.split(' ').collect();
-					//println!("v - {:?}", v);
-					let s = v.len();
-					if s == 2 {
-						auth_token = String::from(v[1]);
-						//println!("auth_token - {:?}", auth_token);
-						let bytes = decode(auth_token).unwrap();
-						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
-						//println!("auth_token bytes 2 - {:?}", m_auth_token);
-						if !m_auth_token.is_empty() {
-							if m_auth_token.contains(":") {
-								let w: Vec<&str> = m_auth_token.split(':').collect();
-								//println!("w - {:?}", w);
-								let t = w.len();
-								if t == 2 {
-									user_name = String::from(w[0]);
-									pass_word = String::from(w[1]);
-								}
-							}
-							//println!("user_name - {:?}", user_name);
-							//println!("pass_word - {:?}", pass_word);
-						}
-					}
-				}
-			}
-		}
-		if req.headers().contains_key("channeltype") {
-			let m = req.headers().get("channeltype").unwrap();
-			channel_type = m.to_str().unwrap().to_string();
-			//println!("m channel_type - {:?}", m);
-		}
-		if req.headers().contains_key("appvercode") {
-			let m = req.headers().get("appvercode").unwrap();
-			app_ver_code = m.to_str().unwrap().to_string();
-			//println!("m app_ver_code - {:?}", m);
-		}
-		if req.headers().contains_key("appidtok") {
-			let m = req.headers().get("appidtok").unwrap();
-			app_id_tok = m.to_str().unwrap().to_string();
-			//println!("m app_id_tok - {:?}", m);
-		}
-		if req.headers().contains_key("devid") {
-			let m = req.headers().get("devid").unwrap();
-			dev_id = m.to_str().unwrap().to_string();
-			//println!("m dev_id - {:?}", m);
-		}
-		if req.headers().contains_key("devtokregno") {
-			let m = req.headers().get("devtokregno").unwrap();
-			dev_tok_regno = m.to_str().unwrap().to_string();
-			//println!("m dev_tok_regno - {:?}", m);
-		}
-	}
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
 	
 	let response_data = get_sales_commission_data(&data);
+	web::Json(response_data)
+}
+
+/// deserialize `SearchSalesCommissionData` from request's body
+#[post("/getsearchsalescommissiondata")]
+async fn get_search_sales_commission_data(search_sales_commission_data: web::Json<SearchSalesCommissionData>, req: HttpRequest, data: web::Data<Pool>) -> impl Responder {
+	let k = String::from(""); //Default value for string variables.
+	let j: bool = false;
+	let api_function = String::from("get_search_sales_commission_data"); 
+	
+	let client_api_response = validate_client_api(req, api_function);
+	let status_code = client_api_response.status_code;
+	let status_description = client_api_response.status_description;
+	
+	println!("get_search_sales_commission_data: status_code - {:?}", status_code);
+	println!("get_search_sales_commission_data: status_description - {:?}", status_description);
+	
+	let search_data = &search_sales_commission_data.search_data.as_ref().unwrap_or(&k);
+	let search_by_key = &search_sales_commission_data.search_by;
+	
+	let is_employee_id = &search_by_key.employee_id.as_ref().unwrap_or(&j);
+	let is_employee_full_names = &search_by_key.employee_full_names.as_ref().unwrap_or(&j);
+		
+	let response_data = get_search_entry_sales_commission_data(search_data, is_employee_id, is_employee_full_names, &data);
 	web::Json(response_data)
 }
 
@@ -2060,6 +1382,27 @@ fn select_sales_commission_details_requests(
 	
 }
 
+fn select_search_sales_commission_details_requests(search_data: &String,
+    is_employee_id: &bool, is_employee_full_names: &bool, conn: &mut PooledConn) -> std::result::Result<Vec<SalesCommissionDetails>, mysql::error::Error> {
+	let mut sales_commission_data = Vec::new();
+	
+    conn.exec_map(
+        "select batch_no, cleaning_service, cleaning_service_type, cleaning_amount, commission_percentage, commission_amount, employee_full_names, date_format(transaction_date, '%d-%m-%Y') transaction_date from salescommissiondata where (case when :is_employee_id = 1 then employee_id = :search_data else employee_full_names = :search_data end) order by id asc;",
+		params! {
+			"search_data" => search_data,
+			"is_employee_id" => is_employee_id,
+		},
+        |(batch_no, cleaning_service, cleaning_service_type, cleaning_amount, commission_percentage, commission_amount, employee_full_names, transaction_date)| {
+            let a = SalesCommissionDetails { batch_no, cleaning_service, cleaning_service_type, cleaning_amount, commission_percentage, commission_amount, employee_full_names, transaction_date };
+			sales_commission_data.push(a);
+        },
+    )
+	.and_then(|_| Ok(1));
+	
+	Ok(sales_commission_data)
+	
+}
+
 fn get_sales_data(sales_batch_data: &Vec<SalesData>, batch_no: i32) -> Vec<SalesDataTable>  {
 	let mut sales_data_table = Vec::new();
 	let mut vehicle_make = String::from("");
@@ -2267,6 +1610,122 @@ fn get_sales_commission_data(data: &web::Data<Pool>) -> SalesCommissionResponseD
 	
 	output_data
 }
+
+fn get_search_entry_sales_commission_data(search_data: &String,
+    is_employee_id: &bool, is_employee_full_names: &bool, 
+	data: &web::Data<Pool>) -> SalesCommissionResponseData  {
+	let mut vec_sales_commission_data = Vec::new();
+	
+	match data
+        .get_conn()
+		.and_then(|mut conn| select_search_sales_commission_details_requests(search_data, is_employee_id, is_employee_full_names, &mut conn))
+    {
+        Ok(s) => {
+			vec_sales_commission_data = s;
+        },
+        Err(e) => println!("Failed to open DB connection. {:?}", e),
+    }
+	
+	//Assign values to struct variable
+	let output_data = SalesCommissionResponseData {status_code: ProcessingStatus::Zero as u32, status_description: String::from("Successful"), sales_commission_data: vec_sales_commission_data };
+	
+	output_data
+}
+
+fn validate_client_api(req: HttpRequest, api_function: String) -> ClientApiResponseDetails  {
+	
+	let mut client_ip = String::from("");
+	let mut authorization = String::from("");
+	let mut channel_type = String::from("");
+	let mut app_ver_code = String::from("");
+	let mut app_id_tok = String::from("");
+	let mut dev_id = String::from("");
+	let mut dev_tok_regno = String::from("");
+	let mut auth_token = String::from("");
+	let mut user_name = String::from("");
+	let mut pass_word = String::from("");
+	let mut status_description = String::from("Error occured during processing, please try again.");
+	let mut status_code = ProcessingStatus::One as u32;
+	
+	if !req.headers().is_empty() {
+		if let Some(val) = req.peer_addr() {
+			client_ip = val.ip().to_string()
+		}
+		if req.headers().contains_key("authorization") {
+			let m = req.headers().get("authorization").unwrap();
+			authorization = m.to_str().unwrap().to_string();
+			//println!("m authorization - {:?}", m);
+			if !authorization.is_empty() {
+				if authorization.to_lowercase().contains("bearer") {
+					//println!("bearer found");
+					let v: Vec<&str> = authorization.split(' ').collect();
+					//println!("v - {:?}", v);
+					let s = v.len();
+					if s == 2 {
+						auth_token = String::from(v[1]);
+						//println!("auth_token - {:?}", auth_token);
+						let bytes = decode(auth_token).unwrap();
+						let m_auth_token = str::from_utf8(&bytes).unwrap().to_string();
+						//println!("auth_token bytes 2 - {:?}", m_auth_token);
+						if !m_auth_token.is_empty() {
+							if m_auth_token.contains(":") {
+								let w: Vec<&str> = m_auth_token.split(':').collect();
+								//println!("w - {:?}", w);
+								let t = w.len();
+								if t == 2 {
+									user_name = String::from(w[0]);
+									pass_word = String::from(w[1]);
+								}
+							}
+							//println!("user_name - {:?}", user_name);
+							//println!("pass_word - {:?}", pass_word);
+						}
+					}
+				}
+			}
+		}
+		if req.headers().contains_key("channeltype") {
+			let m = req.headers().get("channeltype").unwrap();
+			channel_type = m.to_str().unwrap().to_string();
+			//println!("m channel_type - {:?}", m);
+		}
+		if req.headers().contains_key("appvercode") {
+			let m = req.headers().get("appvercode").unwrap();
+			app_ver_code = m.to_str().unwrap().to_string();
+			//println!("m app_ver_code - {:?}", m);
+		}
+		if req.headers().contains_key("appidtok") {
+			let m = req.headers().get("appidtok").unwrap();
+			app_id_tok = m.to_str().unwrap().to_string();
+			//println!("m app_id_tok - {:?}", m);
+		}
+		if req.headers().contains_key("devid") {
+			let m = req.headers().get("devid").unwrap();
+			dev_id = m.to_str().unwrap().to_string();
+			//println!("m dev_id - {:?}", m);
+		}
+		if req.headers().contains_key("devtokregno") {
+			let m = req.headers().get("devtokregno").unwrap();
+			dev_tok_regno = m.to_str().unwrap().to_string();
+			//println!("m dev_tok_regno - {:?}", m);
+		}
+	}
+	
+	if client_ip.len() > 0 && channel_type.len() > 0 && user_name.len() > 0 && pass_word.len() > 0 && api_function.len() > 0 {
+		if channel_type.to_lowercase().eq(&String::from("mobileapp")) {
+			status_code = ProcessingStatus::Zero as u32;
+			status_description = String::from("Successful");
+		}
+	}
+	
+	//println!("validate_client_api: status_code - {:?}", status_code);
+	//println!("validate_client_api: status_description - {:?}", status_description);
+	
+	//Assign values to struct variable
+	let output_data = ClientApiResponseDetails {status_code: status_code, status_description: status_description };
+	
+	output_data
+}
 /*
 fn get_database_connection(data: web::Data<Pool>) -> &'static mut PooledConn {
 	
@@ -2333,22 +1792,23 @@ async fn main() {
 	let server = match HttpServer::new(move || {
         App::new()
             .app_data(shared_data.clone())
-		    .service(hello_world)
-            .service(current_temperature)
-			.service(get_person)
+		    //.service(hello_world)
+            //.service(current_temperature)
+			.service(add_sales_data)
+			//.service(get_person)
 			.service(get_vehicle_make_data)
 			.service(get_vehicle_model_data)
 			.service(get_carpet_type_size_data)
 			.service(get_carpet_type_colour_data)
 			.service(get_vehicle_cleaning_type_cost_data)
 			.service(get_carpet_cleaning_type_cost_data)
-			.service(add_sales_data)
 			.service(get_all_sales_data)
 			.service(get_search_sales_data)
 			.service(get_all_employees_data)
 			.service(get_all_sales_commission_data)
+			.service(get_search_sales_commission_data)
             .route("/", web::get().to(greet))
-            .route("/{name}", web::get().to(greet))
+            //.route("/{name}", web::get().to(greet))
     }).bind("0.0.0.0:9247") {
         Ok(s) => s,
         Err(e) => {
