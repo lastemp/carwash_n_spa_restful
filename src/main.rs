@@ -691,7 +691,7 @@ async fn add_sales_data(sales_batch_data: web::Json<SalesBatchData>, req: HttpRe
 	let status_code = client_api_response.status_code;
 	let status_description = client_api_response.status_description;
 	
-	//println!("channel_type - {:?}", channel_type);
+	println!("add_sales_data: status_description - {:?}", &status_description);
 	let batch_no = &sales_batch_data.batch_no.as_ref().unwrap_or(&k);
 	let sales_batch_data = &sales_batch_data.sales_data;
 	
@@ -1810,13 +1810,16 @@ async fn main() {
             .route("/", web::get().to(greet))
             //.route("/{name}", web::get().to(greet))
     }).bind("0.0.0.0:9247") {
-        Ok(s) => s,
+		Ok(s) => {
+			println!("[info] ActixWebHttpServer - Listening for HTTP on /0.0.0.0:9247");
+			s
+		},
         Err(e) => {
             println!("Failed to bind port. {:?}", e);
             return;
         }
     };
-	//println!("[info] ActixWebHttpServer - Listening for HTTP on /0:0:0:0:0:0:0:0:9247")
+	
     match server.run().await {
         Ok(_) => println!("Server exited normally."),
         Err(e) => println!("Server exited with error: {:?}", e),
