@@ -6,6 +6,10 @@ use base64::{decode};//encode
 use std::str;
 use mysql::*;
 use mysql::prelude::*;
+use genpdf::Alignment;
+use genpdf::Element as _;
+use genpdf::{elements, fonts, style};
+use uuid::Uuid;
 
 //, Result
 
@@ -360,13 +364,19 @@ struct ClientApiResponseDetails {
     status_code: u32,
 	status_description: String,
 }
-/*	
-let url = get_conn_url();
 
-let pool = Pool::new(url)?;
-
-let mut conn = pool.get_conn()?;
-*/
+//Global data
+//"c:\\windows\\fonts",
+const FONT_DIRS: &[&str] = &[
+    "F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\carwash_n_spa_restful\\liberation-fonts",
+    "F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\carwash_n_spa_restful\\liberation-fonts",
+];
+const DEFAULT_FONT_NAME: &'static str = "LiberationSans";
+const MONO_FONT_NAME: &'static str = "LiberationMono";
+const LOREM_IPSUM: &'static str =
+    "Test application \
+    test two \
+    test three.";
 
 #[get("/hello")]
 async fn hello_world() -> impl Responder {
@@ -717,8 +727,11 @@ async fn get_all_sales_data(history_sales_data: web::Json<HistorySalesData>, req
 	let client_api_response = validate_client_api(req, api_function);
 	let status_code = client_api_response.status_code;
 	let status_description = client_api_response.status_description;
-	
+		
 	let response_data = get_history_sales_batch_data(&data);
+	//tests only
+	generate_pdf_sales_data(&response_data);
+	
 	web::Json(response_data)
 }
 
@@ -739,8 +752,11 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 	let is_mobile_no = &search_by_key.mobile_no.as_ref().unwrap_or(&j);
 	let is_customer_name = &search_by_key.customer_name.as_ref().unwrap_or(&j);
 	let is_vehicle_regno = &search_by_key.vehicle_regno.as_ref().unwrap_or(&j);
-		
-	let response_data = get_history_search_sales_batch_data(search_data, is_mobile_no, is_customer_name, is_vehicle_regno, &data);
+	
+	let search_data = search_data.replace(" ", "");
+	let search_data = search_data.to_lowercase();
+	
+	let response_data = get_history_search_sales_batch_data(&search_data, is_mobile_no, is_customer_name, is_vehicle_regno, &data);
 	web::Json(response_data)
 }
 
@@ -1059,9 +1075,9 @@ fn select_incoming_search_sales_batch_data_requests(search_data: &String,
     is_mobile_no: &bool, is_customer_name: &bool, is_vehicle_regno: &bool, conn: &mut PooledConn) -> std::result::Result<Vec<HistorySalesBatchData>, mysql::error::Error> {
 	let mut sales_batch_data = Vec::new();
 
-	//println!("search_data is {:?}", search_data);
-	//println!("is_mobile_no is {:?}", is_mobile_no);
-	//println!("is_vehicle_regno is {:?}", is_regno);
+	//println!("search_data is {:?}", &search_data);
+	//println!("is_mobile_no is {:?}", &is_mobile_no);
+	//println!("is_vehicle_regno is {:?}", &is_vehicle_regno);
 	
 	//(*) is the dereferencing operator
 	//We use it to get the actual value at the address of variable is_vehicle_regno
@@ -1070,7 +1086,8 @@ fn select_incoming_search_sales_batch_data_requests(search_data: &String,
 	if !is_regno {
 		conn.exec_map(
 		//"select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests where cust_name = :search_data",
-		"select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests where (case when :is_mobile_no = 1 then mobile_no = :search_data else cust_name = :search_data end) order by batch_no desc limit 10;",
+		//"select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests where (case when :is_mobile_no = 1 then mobile_no = :search_data else cust_name = :search_data end) order by batch_no desc limit 10;",
+		"select batch_no, cust_name, mobile_no, cleaning_service, sales_amount, paid_amount, payment_mode from incomingsalesbatchdatarequests where (case when :is_mobile_no = 1 then mobile_no = :search_data else lower(replace(coalesce(cust_name,''), ' ', '')) = :search_data end) order by batch_no desc limit 10;",
 		params! {
 				"search_data" => search_data,
 				"is_mobile_no" => is_mobile_no,
@@ -1098,7 +1115,8 @@ fn select_incoming_search_sales_batch_data_requests(search_data: &String,
 		
 		conn.exec_map(
 		//"select a.batch_no, a.cust_name, a.mobile_no, a.cleaning_service, a.sales_amount, a.paid_amount, a.payment_mode from incomingsalesbatchdatarequests a inner join incomingsalesdatarequests b on a.batch_no = b.batch_no where b.vehicle_regno = :search_data and b.cleaning_service = :cleaning_service order by a.batch_no asc limit 10;",
-		"select a.batch_no, a.cust_name, a.mobile_no, a.cleaning_service, a.sales_amount, a.paid_amount, a.payment_mode from incomingsalesbatchdatarequests a inner join incomingsalesdatarequests b on a.batch_no = b.batch_no where b.vehicle_regno = :search_data order by a.batch_no asc limit 10;",
+		//"select a.batch_no, a.cust_name, a.mobile_no, a.cleaning_service, a.sales_amount, a.paid_amount, a.payment_mode from incomingsalesbatchdatarequests a inner join incomingsalesdatarequests b on a.batch_no = b.batch_no where b.vehicle_regno = :search_data order by a.batch_no asc limit 10;",
+		"select a.batch_no, a.cust_name, a.mobile_no, a.cleaning_service, a.sales_amount, a.paid_amount, a.payment_mode from incomingsalesbatchdatarequests a inner join incomingsalesdatarequests b on a.batch_no = b.batch_no where lower(replace(coalesce(b.vehicle_regno,''), ' ', '')) = :search_data order by a.batch_no asc limit 10;",
 		params! {
 				"search_data" => search_data,
 				//"cleaning_service" => cleaning_service,
@@ -1726,6 +1744,261 @@ fn validate_client_api(req: HttpRequest, api_function: String) -> ClientApiRespo
 	
 	output_data
 }
+
+fn generate_pdf_sales_data(historySalesBatchResponseData: &HistorySalesBatchResponseData) {
+	let mut pdf_file_path = String::from("F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\pdf\\");
+	let k = String::from("");
+	
+	let font_dir = FONT_DIRS
+        .iter()
+        .filter(|path| std::path::Path::new(path).exists())
+        .next()
+        .expect("Could not find font directory");
+    let default_font =
+	    fonts::from_files(font_dir, DEFAULT_FONT_NAME, Some(fonts::Builtin::Helvetica))
+        //fonts::from_files(font_dir, "LiberationSans", None)//"arial"
+		//genpdf::fonts::from_files("./fonts", "LiberationSans", None)
+            .expect("Failed to load the default font family");
+    let monospace_font = fonts::from_files(font_dir, MONO_FONT_NAME, Some(fonts::Builtin::Courier))			
+    //let monospace_font = fonts::from_files(font_dir, "LiberationSans", None)
+        .expect("Failed to load the monospace font family");
+
+    let mut doc = genpdf::Document::new(default_font);
+    doc.set_title("Sales Records");
+    doc.set_minimal_conformance();
+    doc.set_line_spacing(1.25);
+
+    let mut decorator = genpdf::SimplePageDecorator::new();
+    decorator.set_margins(10);
+    decorator.set_header(|page| {
+        let mut layout = elements::LinearLayout::vertical();
+        if page > 1 {
+            layout.push(
+                elements::Paragraph::new(format!("Page {}", page)).aligned(Alignment::Center),
+            );
+            layout.push(elements::Break::new(1));
+        }
+        layout.styled(style::Style::new().with_font_size(10))
+    });
+    doc.set_page_decorator(decorator);
+
+    #[cfg(feature = "hyphenation")]
+    {
+        use hyphenation::Load;
+
+        doc.set_hyphenator(
+            hyphenation::Standard::from_embedded(hyphenation::Language::EnglishUS)
+                .expect("Failed to load hyphenation data"),
+        );
+    }
+
+    let monospace = doc.add_font_family(monospace_font);
+    let code = style::Style::from(monospace).bold();
+    let red = style::Color::Rgb(255, 0, 0);
+    let blue = style::Color::Rgb(0, 0, 255);
+
+    doc.push(
+        elements::Paragraph::new("Sales Records")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(20)),
+    );
+    doc.push(elements::Break::new(1.5));
+	/*
+    doc.push(elements::Paragraph::new(
+        "Date: 01-04-2022",
+    ));
+	*/
+	doc.push(
+        elements::Paragraph::new("Report Date: 01-04-2022")
+            .aligned(Alignment::Left)
+            .styled(style::Style::new().bold().with_font_size(15)),
+    );
+	doc.push(elements::Break::new(1.0));
+
+    let mut table = elements::TableLayout::new(vec![1, 1, 1, 1]);
+    table.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    table
+        .row()
+        .element(
+            elements::Paragraph::new("Date")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .element(
+            elements::Paragraph::new("Vehicle Make")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		.element(
+            elements::Paragraph::new("Vehicle Regno")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		.element(
+            elements::Paragraph::new("Amount")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .push()
+        .expect("Invalid table row");
+		
+	let mut table2 = elements::TableLayout::new(vec![1, 1, 1, 1]);
+    table2.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    table2
+        .row()
+        .element(
+            elements::Paragraph::new("Date")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .element(
+            elements::Paragraph::new("Carpet Size")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		.element(
+            elements::Paragraph::new("Carpet Colour")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		.element(
+            elements::Paragraph::new("Amount")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .push()
+        .expect("Invalid table row");	
+	/*	
+    for i in 0..10 {
+        table
+            .row()
+            .element(elements::Paragraph::new("28-03-2022").padded(1))
+            .element(elements::Paragraph::new("AUDI").padded(1))
+			.element(elements::Paragraph::new("KBC 725V").padded(1))
+			.element(elements::Paragraph::new("250").padded(1))
+            .push()
+            .expect("Invalid table row");
+    }
+	*/
+	let mut transaction_date = String::from("");
+	let mut vehicle_make = String::from("");
+	let mut vehicle_regno = String::from("");
+	let mut carpet_size = String::from("");
+	let mut carpet_colour = String::from("");
+	let mut sales_amount = 0;
+	let mut total_vehicle_sales_amount = 0;
+	let mut total_carpet_sales_amount = 0;
+
+	let sales_batch_data = &historySalesBatchResponseData.sales_batch_data;
+	
+	for history_sales_batch_data in sales_batch_data.iter() {
+		//let batch_no = &history_sales_batch_data.batch_no;
+		//println!("batch_no: {:?}", batch_no);
+		
+		let sales_data = &history_sales_batch_data.sales_data;
+		let vehicle_sales_data = &sales_data.vehicle_sales_data;
+		let carpet_sales_data = &sales_data.carpet_sales_data;
+		
+		if vehicle_sales_data.len() > 0 {
+			for history_vehicle_sales_data in vehicle_sales_data.iter() {
+				transaction_date = history_vehicle_sales_data.transaction_date.to_string();
+				vehicle_make = history_vehicle_sales_data.vehicle_make.to_string();
+				vehicle_regno = history_vehicle_sales_data.vehicle_regno.to_string();
+				sales_amount = history_vehicle_sales_data.sales_amount;
+				total_vehicle_sales_amount = total_vehicle_sales_amount + sales_amount;
+				
+				/*
+				println!("transaction_date: {:?}", transaction_date);
+				println!("vehicle_make: {:?}", vehicle_make);
+				println!("vehicle_regno: {:?}", vehicle_regno);
+				println!("sales_amount: {:?}", sales_amount);
+				*/
+				table
+					.row()
+					.element(elements::Paragraph::new(transaction_date).padded(1))
+					.element(elements::Paragraph::new(vehicle_make.to_uppercase()).padded(1))
+					.element(elements::Paragraph::new(vehicle_regno.to_uppercase()).padded(1))
+					.element(elements::Paragraph::new(sales_amount.to_string()).padded(1))
+					.push()
+					.expect("Invalid table row");
+			}
+		}
+		
+		if carpet_sales_data.len() > 0 {
+			for history_carpet_sales_data in carpet_sales_data.iter() {
+				transaction_date = history_carpet_sales_data.transaction_date.to_string();
+				carpet_size = history_carpet_sales_data.carpet_size.to_string();
+				carpet_colour = history_carpet_sales_data.carpet_colour.to_string();
+				sales_amount = history_carpet_sales_data.sales_amount;
+				total_carpet_sales_amount = total_carpet_sales_amount + sales_amount;
+				
+				table2
+					.row()
+					.element(elements::Paragraph::new(transaction_date).padded(1))
+					.element(elements::Paragraph::new(carpet_size).padded(1))
+					.element(elements::Paragraph::new(carpet_colour.to_uppercase()).padded(1))
+					.element(elements::Paragraph::new(sales_amount.to_string()).padded(1))
+					.push()
+					.expect("Invalid table row");
+			}
+		}
+	}
+	
+	let mut table_total_vehicle = elements::TableLayout::new(vec![1, 1]);
+    table_total_vehicle.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    table_total_vehicle
+        .row()
+        .element(
+            elements::Paragraph::new("Total Amount")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .element(
+            elements::Paragraph::new(total_vehicle_sales_amount.to_string())
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .push()
+        .expect("Invalid table row");
+		
+	let mut table_total_carpet = elements::TableLayout::new(vec![1, 1]);
+    table_total_carpet.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    table_total_carpet
+        .row()
+        .element(
+            elements::Paragraph::new("Total Amount")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .element(
+            elements::Paragraph::new(total_carpet_sales_amount.to_string())
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .push()
+        .expect("Invalid table row");	
+	
+    doc.push(table);
+	doc.push(table_total_vehicle);
+	doc.push(elements::Break::new(1.5));
+	doc.push(table2);
+	doc.push(table_total_carpet);
+	
+	let my_uuid = Uuid::new_v4();
+	let pdf_file_name: String = my_uuid.to_string();
+	let file_type = String::from(".pdf");
+	
+	pdf_file_path.push_str(&pdf_file_name);
+	pdf_file_path.push_str(&file_type);
+	
+    doc.render_to_file(pdf_file_path)
+        .expect("Failed to write output file");
+	
+	//let status_description = &historySalesBatchResponseData.status_description;
+	//println!("historySalesBatchResponseData: {:?}", status_description);
+	//pdf_file_path
+}
+
 /*
 fn get_database_connection(data: web::Data<Pool>) -> &'static mut PooledConn {
 	
