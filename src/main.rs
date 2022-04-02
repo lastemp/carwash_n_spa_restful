@@ -10,6 +10,8 @@ use genpdf::Alignment;
 use genpdf::Element as _;
 use genpdf::{elements, fonts, style};
 use uuid::Uuid;
+//use textwrap;
+use chrono::prelude::*;
 
 //, Result
 
@@ -757,6 +759,10 @@ async fn get_search_sales_data(search_history_sales_data: web::Json<SearchHistor
 	let search_data = search_data.to_lowercase();
 	
 	let response_data = get_history_search_sales_batch_data(&search_data, is_mobile_no, is_customer_name, is_vehicle_regno, &data);
+	
+	//tests only
+	generate_pdf_sales_data(&response_data);
+	
 	web::Json(response_data)
 }
 
@@ -785,6 +791,10 @@ async fn get_all_sales_commission_data(sales_commission_data: web::Json<SalesCom
 	let status_description = client_api_response.status_description;
 	
 	let response_data = get_sales_commission_data(&data);
+	
+	//tests only
+	generate_pdf_sales_commission_data(&response_data);
+	
 	web::Json(response_data)
 }
 
@@ -799,8 +809,8 @@ async fn get_search_sales_commission_data(search_sales_commission_data: web::Jso
 	let status_code = client_api_response.status_code;
 	let status_description = client_api_response.status_description;
 	
-	println!("get_search_sales_commission_data: status_code - {:?}", status_code);
-	println!("get_search_sales_commission_data: status_description - {:?}", status_description);
+	//println!("get_search_sales_commission_data: status_code - {:?}", status_code);
+	//println!("get_search_sales_commission_data: status_description - {:?}", status_description);
 	
 	let search_data = &search_sales_commission_data.search_data.as_ref().unwrap_or(&k);
 	let search_by_key = &search_sales_commission_data.search_by;
@@ -809,6 +819,10 @@ async fn get_search_sales_commission_data(search_sales_commission_data: web::Jso
 	let is_employee_full_names = &search_by_key.employee_full_names.as_ref().unwrap_or(&j);
 		
 	let response_data = get_search_entry_sales_commission_data(search_data, is_employee_id, is_employee_full_names, &data);
+	
+	//tests only
+	generate_pdf_sales_commission_data(&response_data);
+	
 	web::Json(response_data)
 }
 
@@ -1745,9 +1759,23 @@ fn validate_client_api(req: HttpRequest, api_function: String) -> ClientApiRespo
 	output_data
 }
 
-fn generate_pdf_sales_data(historySalesBatchResponseData: &HistorySalesBatchResponseData) {
+fn generate_pdf_sales_data(history_sales_batch_response_data: &HistorySalesBatchResponseData) {
+	let sales_batch_data = &history_sales_batch_response_data.sales_batch_data;
+	
+	if sales_batch_data.len() == 0 {
+		//println!("record not found {}", &sales_batch_data.len());
+		return
+	}
+	//println!("record found {}", &sales_batch_data.len());
+	
 	let mut pdf_file_path = String::from("F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\pdf\\");
 	let k = String::from("");
+	//Utc::today().format("%Y-%m-%d") //i.e 2022-04-02
+	//Utc::today().format("%d-%m-%Y") //i.e 02-04-2022
+	let current_date = Utc::today().format("%d-%m-%Y").to_string();
+	let mut report_date = String::from("Report Date: ");
+	
+	report_date.push_str(&current_date);
 	
 	let font_dir = FONT_DIRS
         .iter()
@@ -1809,7 +1837,7 @@ fn generate_pdf_sales_data(historySalesBatchResponseData: &HistorySalesBatchResp
     ));
 	*/
 	doc.push(
-        elements::Paragraph::new("Report Date: 01-04-2022")
+        elements::Paragraph::new(report_date)
             .aligned(Alignment::Left)
             .styled(style::Style::new().bold().with_font_size(15)),
     );
@@ -1867,19 +1895,8 @@ fn generate_pdf_sales_data(historySalesBatchResponseData: &HistorySalesBatchResp
                 .padded(1),
         )
         .push()
-        .expect("Invalid table row");	
-	/*	
-    for i in 0..10 {
-        table
-            .row()
-            .element(elements::Paragraph::new("28-03-2022").padded(1))
-            .element(elements::Paragraph::new("AUDI").padded(1))
-			.element(elements::Paragraph::new("KBC 725V").padded(1))
-			.element(elements::Paragraph::new("250").padded(1))
-            .push()
-            .expect("Invalid table row");
-    }
-	*/
+        .expect("Invalid table row");
+		
 	let mut transaction_date = String::from("");
 	let mut vehicle_make = String::from("");
 	let mut vehicle_regno = String::from("");
@@ -1888,8 +1905,8 @@ fn generate_pdf_sales_data(historySalesBatchResponseData: &HistorySalesBatchResp
 	let mut sales_amount = 0;
 	let mut total_vehicle_sales_amount = 0;
 	let mut total_carpet_sales_amount = 0;
-
-	let sales_batch_data = &historySalesBatchResponseData.sales_batch_data;
+	let mut is_exists_vehicle_data = false;
+	let mut is_exists_carpet_data = false;
 	
 	for history_sales_batch_data in sales_batch_data.iter() {
 		//let batch_no = &history_sales_batch_data.batch_no;
@@ -1898,6 +1915,14 @@ fn generate_pdf_sales_data(historySalesBatchResponseData: &HistorySalesBatchResp
 		let sales_data = &history_sales_batch_data.sales_data;
 		let vehicle_sales_data = &sales_data.vehicle_sales_data;
 		let carpet_sales_data = &sales_data.carpet_sales_data;
+		
+		if !is_exists_vehicle_data && vehicle_sales_data.len() > 0 {
+			is_exists_vehicle_data = true
+		}
+		
+		if !is_exists_carpet_data && carpet_sales_data.len() > 0 {
+			is_exists_carpet_data = true
+		}
 		
 		if vehicle_sales_data.len() > 0 {
 			for history_vehicle_sales_data in vehicle_sales_data.iter() {
@@ -1976,27 +2001,263 @@ fn generate_pdf_sales_data(historySalesBatchResponseData: &HistorySalesBatchResp
                 .padded(1),
         )
         .push()
-        .expect("Invalid table row");	
+        .expect("Invalid table row");
 	
-    doc.push(table);
-	doc.push(table_total_vehicle);
-	doc.push(elements::Break::new(1.5));
-	doc.push(table2);
-	doc.push(table_total_carpet);
+	if is_exists_vehicle_data {
+		doc.push(table);
+		doc.push(table_total_vehicle);
+		doc.push(elements::Break::new(1.5));
+	}
+    if is_exists_carpet_data {
+		doc.push(table2);
+		doc.push(table_total_carpet);
+	}
 	
-	let my_uuid = Uuid::new_v4();
-	let pdf_file_name: String = my_uuid.to_string();
-	let file_type = String::from(".pdf");
+	if is_exists_vehicle_data && is_exists_carpet_data {
 	
-	pdf_file_path.push_str(&pdf_file_name);
-	pdf_file_path.push_str(&file_type);
-	
-    doc.render_to_file(pdf_file_path)
-        .expect("Failed to write output file");
-	
+		let my_uuid = Uuid::new_v4();
+		let pdf_file_name: String = my_uuid.to_string();
+		let file_type = String::from(".pdf");
+		
+		pdf_file_path.push_str(&pdf_file_name);
+		pdf_file_path.push_str(&file_type);
+		
+		doc.render_to_file(pdf_file_path)
+			.expect("Failed to write output file");
+		
+	}
 	//let status_description = &historySalesBatchResponseData.status_description;
 	//println!("historySalesBatchResponseData: {:?}", status_description);
 	//pdf_file_path
+}
+
+fn generate_pdf_sales_commission_data(sales_commission_response_data: &SalesCommissionResponseData) {
+
+	let sales_commission_data = &sales_commission_response_data.sales_commission_data;
+	
+	if sales_commission_data.len() == 0 {
+		println!("record not found {}", &sales_commission_data.len());
+		return
+	}
+	//println!("record found {}", &sales_commission_data.len());
+	
+	let mut pdf_file_path = String::from("F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\pdf\\");
+	let k = String::from("");
+	//Utc::today().format("%Y-%m-%d") //i.e 2022-04-02
+	//Utc::today().format("%d-%m-%Y") //i.e 02-04-2022
+	let current_date = Utc::today().format("%d-%m-%Y").to_string();
+	let mut report_date = String::from("Report Date: ");
+	
+	report_date.push_str(&current_date);
+
+	let font_dir = FONT_DIRS
+        .iter()
+        .filter(|path| std::path::Path::new(path).exists())
+        .next()
+        .expect("Could not find font directory");
+    let default_font =
+	    fonts::from_files(font_dir, DEFAULT_FONT_NAME, Some(fonts::Builtin::Helvetica))
+        //fonts::from_files(font_dir, "LiberationSans", None)//"arial"
+		//genpdf::fonts::from_files("./fonts", "LiberationSans", None)
+            .expect("Failed to load the default font family");
+    let monospace_font = fonts::from_files(font_dir, MONO_FONT_NAME, Some(fonts::Builtin::Courier))			
+    //let monospace_font = fonts::from_files(font_dir, "LiberationSans", None)
+        .expect("Failed to load the monospace font family");
+
+    let mut doc = genpdf::Document::new(default_font);
+    doc.set_title("Sales Commission Records");
+    doc.set_minimal_conformance();
+    doc.set_line_spacing(1.25);
+
+    let mut decorator = genpdf::SimplePageDecorator::new();
+    decorator.set_margins(10);
+    decorator.set_header(|page| {
+        let mut layout = elements::LinearLayout::vertical();
+        if page > 1 {
+            layout.push(
+                elements::Paragraph::new(format!("Page {}", page)).aligned(Alignment::Center),
+            );
+            layout.push(elements::Break::new(1));
+        }
+        layout.styled(style::Style::new().with_font_size(10))
+    });
+    doc.set_page_decorator(decorator);
+
+    #[cfg(feature = "hyphenation")]
+    {
+        use hyphenation::Load;
+
+        doc.set_hyphenator(
+            hyphenation::Standard::from_embedded(hyphenation::Language::EnglishUS)
+                .expect("Failed to load hyphenation data"),
+        );
+    }
+
+    let monospace = doc.add_font_family(monospace_font);
+    let code = style::Style::from(monospace).bold();
+    let red = style::Color::Rgb(255, 0, 0);
+    let blue = style::Color::Rgb(0, 0, 255);
+
+    doc.push(
+        elements::Paragraph::new("Sales Commission Records")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(20)),
+    );
+    doc.push(elements::Break::new(1.5));
+	/*
+    doc.push(elements::Paragraph::new(
+        "Date: 01-04-2022",
+    ));
+	*/
+	doc.push(
+        elements::Paragraph::new(report_date)
+            .aligned(Alignment::Left)
+            .styled(style::Style::new().bold().with_font_size(15)),
+    );
+	doc.push(elements::Break::new(1.0));
+		
+	let mut table = elements::TableLayout::new(vec![1, 1, 1, 1, 2]);
+    table.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    table
+        .row()
+        .element(
+            elements::Paragraph::new("Date")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .element(
+            elements::Paragraph::new("Service")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		/*
+		.element(
+            elements::Paragraph::new("Type")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		*/
+		.element(
+            elements::Paragraph::new("Sales")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		.element(
+            elements::Paragraph::new("Commission")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+		.element(
+            elements::Paragraph::new("Employee")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .push()
+        .expect("Invalid table row");
+		
+	let mut transaction_date = String::from("");
+	let mut cleaning_service = String::from("");
+	let mut cleaning_service_type = String::from("");
+	let mut employee_full_names = String::from("");
+	//let key = String::from("-");
+	let mut cleaning_amount = 0;
+	let mut commission_amount = 0;
+	let mut total_cleaning_amount = 0;
+	let mut total_commission_amount = 0;
+	let mut is_exists_data = false;
+	
+	if sales_commission_data.len() > 0 {
+		is_exists_data = true;
+	}
+	
+	if sales_commission_data.len() > 0 {
+		for sales_commission in sales_commission_data.iter() {
+			transaction_date = sales_commission.transaction_date.to_string();
+			cleaning_service = sales_commission.cleaning_service.to_string();
+			cleaning_service_type = sales_commission.cleaning_service_type.to_string();
+			employee_full_names = sales_commission.employee_full_names.to_string();
+			cleaning_amount = sales_commission.cleaning_amount;
+			commission_amount = sales_commission.commission_amount;
+			total_cleaning_amount = total_cleaning_amount + cleaning_amount;
+			total_commission_amount = total_commission_amount + commission_amount;
+			//cleaning_service.push_str(&key);
+			//cleaning_service.push_str(&cleaning_service_type);
+			
+			//textwrap::wrap
+			//let cm = textwrap::fill(&employee_full_names.to_lowercase(), 18);
+			//println!("wraptext: {}", cm);
+			//let full_names = textwrap::fill(&employee_full_names.to_lowercase(), 10);
+			//println!("full_names: {}", &full_names);
+			//let service = textwrap::fill(&cleaning_service.to_lowercase(), 10);
+			//let service = service.replace("\n","\\n");
+			//println!("{}", &service);
+			
+			table
+				.row()
+				.element(elements::Paragraph::new(transaction_date).padded(1))
+				.element(elements::Paragraph::new(cleaning_service.to_lowercase()).padded(1))
+				//.element(elements::Paragraph::new(cleaning_service_type.to_lowercase()).padded(1))
+				.element(elements::Paragraph::new(cleaning_amount.to_string()).padded(1))
+				.element(elements::Paragraph::new(commission_amount.to_string()).padded(1))
+				.element(elements::Paragraph::new(employee_full_names.to_lowercase()).padded(1))
+				.push()
+				.expect("Invalid table row");
+		}
+	}
+	
+	let mut table_total_sales = elements::TableLayout::new(vec![1, 1]);
+    table_total_sales.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    table_total_sales
+        .row()
+        .element(
+            elements::Paragraph::new("Total Sales Amount")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .element(
+            elements::Paragraph::new(total_cleaning_amount.to_string())
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .push()
+        .expect("Invalid table row");
+		
+	let mut table_total_commission = elements::TableLayout::new(vec![1, 1]);
+    table_total_commission.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    table_total_commission
+        .row()
+        .element(
+            elements::Paragraph::new("Total Commission Amount")
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .element(
+            elements::Paragraph::new(total_commission_amount.to_string())
+                .styled(style::Effect::Bold)
+                .padded(1),
+        )
+        .push()
+        .expect("Invalid table row");
+	
+	if is_exists_data {
+		
+		doc.push(table);
+		doc.push(table_total_sales);
+		//doc.push(elements::Break::new(1.5));
+		doc.push(table_total_commission);
+	
+		let my_uuid = Uuid::new_v4();
+		let pdf_file_name: String = my_uuid.to_string();
+		let file_type = String::from(".pdf");
+		
+		pdf_file_path.push_str(&pdf_file_name);
+		pdf_file_path.push_str(&file_type);
+		
+		doc.render_to_file(pdf_file_path)
+			.expect("Failed to write output file");
+		
+	}
+
 }
 
 /*

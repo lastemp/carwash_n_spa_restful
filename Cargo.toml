@@ -13,3 +13,5 @@ base64 = "0.13.0"
 mysql = "20.1.0"
 genpdf = "0.2.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
+textwrap = "0.15.0"
+chrono = "0.4"
