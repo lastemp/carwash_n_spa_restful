@@ -1,6 +1,6 @@
 extern crate base64;
 
-use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder, Result};
 use serde::{Serialize, Deserialize};
 use base64::{decode};//encode
 use std::str;
@@ -12,8 +12,10 @@ use genpdf::{elements, fonts, style};
 use uuid::Uuid;
 //use textwrap;
 use chrono::prelude::*;
-
-//, Result
+use actix_files::NamedFile;
+use std::path::{Path};//PathBuf
+//use actix_files as fs;
+//use actix_web::http::{header, Method, StatusCode};
 
 #[derive(Deserialize)]
 struct Info {
@@ -375,10 +377,6 @@ const FONT_DIRS: &[&str] = &[
 ];
 const DEFAULT_FONT_NAME: &'static str = "LiberationSans";
 const MONO_FONT_NAME: &'static str = "LiberationMono";
-const LOREM_IPSUM: &'static str =
-    "Test application \
-    test two \
-    test three.";
 
 #[get("/hello")]
 async fn hello_world() -> impl Responder {
@@ -426,9 +424,31 @@ fn get_location() -> String {
 	local_name
 }
 
+async fn index() -> impl Responder {
+	format!("")
+}
+
 async fn greet(req: HttpRequest) -> impl Responder {
     let name = req.match_info().get("name").unwrap_or("World");
     format!("Hello {}!", &name)
+}
+
+async fn fetch_pdf_document(req: HttpRequest) -> Result<NamedFile> {
+    //let path: PathBuf = req.match_info().query("filename").parse().unwrap();
+	let file_name = req.match_info().get("filename").unwrap_or("");
+	let mut file_path = get_pdf_file_path();
+	
+	file_path.push_str(file_name);
+	//println!("file_path {}", &file_path);
+	
+    let path = Path::new(&file_path);
+    Ok(NamedFile::open(path)?)
+}
+
+fn get_pdf_file_path() -> String {
+	//let pdf_file_path = String::from("F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\pdf\\");
+	let pdf_file_path = String::from("F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\carwash_n_spa_restful\\pdf\\");
+	pdf_file_path
 }
 
 /// deserialize `VehicleMakeData` from request's body
@@ -1768,7 +1788,7 @@ fn generate_pdf_sales_data(history_sales_batch_response_data: &HistorySalesBatch
 	}
 	//println!("record found {}", &sales_batch_data.len());
 	
-	let mut pdf_file_path = String::from("F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\pdf\\");
+	let mut pdf_file_path = get_pdf_file_path();
 	let k = String::from("");
 	//Utc::today().format("%Y-%m-%d") //i.e 2022-04-02
 	//Utc::today().format("%d-%m-%Y") //i.e 02-04-2022
@@ -2041,7 +2061,7 @@ fn generate_pdf_sales_commission_data(sales_commission_response_data: &SalesComm
 	}
 	//println!("record found {}", &sales_commission_data.len());
 	
-	let mut pdf_file_path = String::from("F:\\my_Systems_2\\Rust\\Innovation\\Restful_APIs\\Carwash_n_Spa_System\\pdf\\");
+	let mut pdf_file_path = get_pdf_file_path();
 	let k = String::from("");
 	//Utc::today().format("%Y-%m-%d") //i.e 2022-04-02
 	//Utc::today().format("%d-%m-%Y") //i.e 02-04-2022
@@ -2341,8 +2361,9 @@ async fn main() {
 			.service(get_all_employees_data)
 			.service(get_all_sales_commission_data)
 			.service(get_search_sales_commission_data)
-            .route("/", web::get().to(greet))
+			.route("/", web::get().to(index))
             //.route("/{name}", web::get().to(greet))
+			.route("/fetchpdfdoc/{filename:.*}", web::get().to(fetch_pdf_document))
     }).bind("0.0.0.0:9247") {
 		Ok(s) => {
 			println!("[info] ActixWebHttpServer - Listening for HTTP on /0.0.0.0:9247");
