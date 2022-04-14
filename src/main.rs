@@ -906,8 +906,7 @@ fn get_customer_sales_data_2() -> HistoryCustomerSalesData {
 }
 
 fn get_conn_url() -> String {
-	let url = "mysql://ussd:arunga@2030!@localhost:3306/carwash_n_spa";
-	//let url = "mysql://app1:23$)W.@9smtf!qp7@localhost:3306/carwash_n_spa"; cloud server
+	let url = "mysql://xxx:xxx@localhost:xxx/xxx";
 	String::from(url)
 }
 
