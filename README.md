@@ -1,6 +1,6 @@
 # carwash_n_spa_restful
 
-This RESTful Actix Web API that integrates with mobile app and is meant to enable Carwash owners to manage their customers and record payments.
+This RESTful Actix Web API that integrates with mobile app and is meant to enable Carwash owners to automate their record keeping and payments.
 
 You'll need to have a MySQL (or compatible) server running on your machine to test this example.
 
