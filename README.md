@@ -2,6 +2,13 @@
 
 This RESTful Actix Web API that integrates with mobile app and is meant to enable Carwash owners to automate their record keeping and payments.
 
+The RESTful Actix Web API has below listed dependencies:
+- [Actix Web](https://github.com/actix/actix-web) web framework for Rust
+- [Serde](https://github.com/serde-rs/serde) for serializing and deserializing Rust data structures
+- [base64](https://github.com/marshallpierce/rust-base64) Decode from Base64 format or encode into it
+- [mysql](https://github.com/blackbeam/rust-mysql-simple) MySql database driver
+- [dotenv](https://github.com/dotenv-rs/dotenv) Loads environment variables from a .env file
+
 You'll need to have a MySQL (or compatible) server running on your machine to test this example.
 
 ## Usage
