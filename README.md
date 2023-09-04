@@ -8,6 +8,7 @@ The RESTful Actix Web API has below listed dependencies:
 - [base64](https://github.com/marshallpierce/rust-base64) Decode from Base64 format or encode into it
 - [mysql](https://github.com/blackbeam/rust-mysql-simple) MySql database driver
 - [dotenv](https://github.com/dotenv-rs/dotenv) Loads environment variables from a .env file
+- [MySQL](https://github.com/mysql/mysql-server) MySQL database server
 
 You'll need to have a MySQL (or compatible) server running on your machine to test this example.
 
